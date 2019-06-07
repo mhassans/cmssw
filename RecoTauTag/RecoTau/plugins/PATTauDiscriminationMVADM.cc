@@ -24,6 +24,8 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
     explicit PATTauDiscriminationMVADM(const edm::ParameterSet& iConfig)
         :PATTauDiscriminationProducerBase(iConfig){
           targetDM_        = iConfig.getParameter<int>("targetDM");
+
+          // setup mva reader here
         }
     ~PATTauDiscriminationMVADM() override{}
     double discriminate(const TauRef& tau) const override;
@@ -155,60 +157,64 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
       return std::make_pair(pi,pi0);
     }
 
+  std::pair<std::vector<Vector>, Vector> GetA1 (const TauRef& tau, float gammas_pt_cut) const {
+    std::vector<Vector> prongs;
+    Vector pi0;
+    reco::CandidatePtrVector hads = tau->signalChargedHadrCands();
+    if(hads.size()==3) {
+      // arrange hadrons so the oppositly charged hadron is contained in the first element
+      if(hads[1]->charge()!=hads[0]->charge()&&hads[1]->charge()!=hads[2]->charge()){
+        auto temp = hads[1];
+        hads[1] = hads[0];
+        hads[0] = temp;
+      }
+      else if(hads[2]->charge()!=hads[0]->charge()&&hads[2]->charge()!=hads[1]->charge()){
+        auto temp = hads[2];
+        hads[2] = hads[0];
+        hads[0] = temp;
+      } 
+      // from the two same sign hadrons place the one that gives the mass most similar to the rho meson as the second element
+      double rho_mass = 0.7755;
+      double dM1 = std::fabs((hads[0]->p4()+hads[1]->p4()).M()-rho_mass);
+      double dM2 = std::fabs((hads[0]->p4()+hads[2]->p4()).M()-rho_mass);
+      if(dM2<dM1){
+        auto temp = hads[2];
+        hads[2] = hads[1];
+        hads[1] = temp;
+      }
+    }
 
-//    float Egamma1_tau_;
-//    float Egamma2_tau_;
-//    float Epi_tau_;
-//    float rho_dEta_tau_;
-//    float rho_dphi_tau_;
-//    float gammas_dEta_tau_;
-//    float gammas_dR_tau_;
-//    float DeltaR2WRTtau_tau_;
-//    float eta_;
-//    float pt_;
-//    float Epi0_;
-//    float Epi_;
-//    float rho_dEta_;
-//    float rho_dphi_;
-//    float gammas_dEta_;
-//    float tau_decay_mode_;
-//    float Mrho_;
-//    float Mpi0_;
-//    float DeltaR2WRTtau_;
-//    float Mpi0_TwoHighGammas_;
-//    float Mrho_OneHighGammas_;
-//    float Mrho_TwoHighGammas_;
-//    float Mrho_subleadingGamma_;
-//    float strip_pt_; 
-//    float E_;
-//    float E1_;
-//    float E1_overEa1_;
-//    float E1_overEtau_;
-//    float E2_;
-//    float E2_overEa1_;
-//    float E2_overEtau_;
-//    float E3_;
-//    float E3_overEtau_;
-//    float a1_pi0_dEta_;
-//    float a1_pi0_dEta_timesEtau_;
-//    float a1_pi0_dphi_;
-//    float a1_pi0_dphi_timesEtau_;
-//    float h1_h2_dEta_;
-//    float h1_h2_dEta_timesE12_;
-//    float h1_h2_dphi_;
-//    float h1_h2_dphi_timesE12_;
-//    float h1_h3_dEta_;
-//    float h1_h3_dEta_timesE13_;
-//    float h1_h3_dphi_;
-//    float h1_h3_dphi_timesE13_;
-//    float h2_h3_dEta_;
-//    float h2_h3_dEta_timesE23_;
-//    float h2_h3_dphi_;
-//    float h2_h3_dphi_timesE23_;
-//    float mass0_;
-//    float mass1_;
-//    float mass2_;
-//    float strip_E_;
+    reco::CandidatePtrVector gammas;
+    for (auto g: tau->isolationGammaCands()) if(g->pt()>gammas_pt_cut) gammas.push_back(g); // change to signal gammas for 94X
+    double cone_size = std::max(std::min(0.1, 3./tau->pt()),0.05);
+    std::vector<std::pair<Vector, reco::CandidatePtrVector>> strip_pairs = HPSGammas(gammas);
+    std::vector<std::pair<Vector, reco::CandidatePtrVector>> strips_incone; 
+    for(auto s : strip_pairs) if(std::fabs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
+     
+    reco::CandidatePtrVector signal_gammas = {};
+    if(strips_incone.size()>0) {
+      pi0 = GetPi0(strips_incone[0].second, true);
+      for (auto s : strips_incone) {
+        for (auto g : s.second) signal_gammas.push_back(g);
+      } 
+    } else if(strip_pairs.size()>0) {
+      double min_dR = 0.4;
+      std::pair<Vector, reco::CandidatePtrVector> closest_strip;
+      for (auto s : strip_pairs) {
+        double dR = ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4());
+        if(dR<min_dR) {
+          min_dR = dR;
+          closest_strip = s;
+        }
+      }
+      pi0 = GetPi0(closest_strip.second, true);
+      for (auto g : closest_strip.second) signal_gammas.push_back(g);
+    }
+    gammas_ = signal_gammas;
+    for (auto h : hads) prongs.push_back((Vector)h->p4());  
+    return std::make_pair(prongs, pi0);
+  }
+
  
 };
 
@@ -219,48 +225,232 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
   // define all variables used by MVA
   float tau_decay_mode = tau->decayMode();
 
+  if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return 0.;
+
+  Vector pi0;
+  Vector pi;
+  std::pair<Vector,Vector> rho;
+  std::vector<Vector> a1_daughters = {};
+
   if(tau_decay_mode>1&&tau_decay_mode<10) return -1;
 
   if(tau_decay_mode>=10) {
-    ;
+    std::pair<std::vector<Vector>, Vector>  a1 = GetA1(tau, gammas_pt_cut);
+    a1_daughters  = a1.first;
+    pi0 = a1.second;
   } else {
     for (auto g: tau->signalGammaCands()) if(g->pt()>gammas_pt_cut) gammas_.push_back(g);
-    std::pair<Vector,Vector> rho = GetRho (tau, gammas_pt_cut);
-    if(rho.first.mass()>0) ;
+    rho = GetRho (tau, gammas_pt_cut);
+    pi0 = rho.second;
+  }
+ 
+  float strip_pt = pi0.pt();
+  float E = tau->energy();
+
+  float E1=-1;
+  float E2=-1;
+  float E3=-1;
+  float a1_pi0_dEta=-1;
+  float a1_pi0_dphi=-1;
+  float a1_pi0_dEta_timesEtau=-1;
+  float a1_pi0_dphi_timesEtau=-1;
+  float h1_h2_dEta=-1;
+  float h1_h2_dphi=-1;
+  float h1_h3_dEta=-1;
+  float h1_h3_dphi=-1;
+  float h2_h3_dEta=-1;
+  float h2_h3_dphi=-1;
+  float h1_h2_dphi_timesE12=-1;
+  float h1_h3_dphi_timesE13=-1;
+  float h2_h3_dphi_timesE23=-1;
+  float h1_h2_dEta_timesE12=-1;
+  float h1_h3_dEta_timesE13=-1;
+  float h2_h3_dEta_timesE23=-1;
+  float mass0=-1;
+  float mass1=-1;
+  float mass2=-1;
+  float strip_E=-1;
+  float E1_overEa1=-1;
+  float E2_overEa1=-1;
+  float E1_overEtau=-1;
+  float E2_overEtau=-1;
+  float E3_overEtau=-1;
+
+  if(tau_decay_mode>9) {
+    strip_E = pi0.energy();
+    mass0 = (a1_daughters[0] + a1_daughters[1] + a1_daughters[2]).M();
+    mass1 = (a1_daughters[0] + a1_daughters[1]).M();
+    mass2 = (a1_daughters[0] + a1_daughters[2]).M();
+    E1 = a1_daughters[0].energy();
+    E2 = a1_daughters[1].energy();
+    E3 = a1_daughters[2].energy();
+
+    float Ea1 = E1+E2+E3;
+    E1_overEa1 = E1/Ea1;
+    E2_overEa1 = E2/Ea1;
+    float Etau = Ea1+strip_E;
+    E1_overEtau = E1/Etau;
+    E2_overEtau = E2/Etau;
+    E3_overEtau = E3/Etau;
+
+    if(strip_pt>0) {
+      a1_pi0_dEta = std::fabs(pi0.eta()-tau->eta());
+      a1_pi0_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(pi0,tau->p4()));
+    }
+
+    a1_pi0_dEta_timesEtau=a1_pi0_dEta*Etau;
+    a1_pi0_dphi_timesEtau=a1_pi0_dphi*Etau;
+
+    h1_h2_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[1]));
+    h1_h3_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[2]));
+    h2_h3_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[1],a1_daughters[2]));
+    h1_h2_dEta = std::fabs(a1_daughters[0].eta()-a1_daughters[1].eta());
+    h1_h3_dEta = std::fabs(a1_daughters[0].eta()-a1_daughters[2].eta());
+    h2_h3_dEta = std::fabs(a1_daughters[1].eta()-a1_daughters[2].eta());
+
+    h1_h2_dphi_timesE12=h1_h2_dphi*(E1+E2);
+    h1_h3_dphi_timesE13=h1_h3_dphi*(E1+E3);
+    h2_h3_dphi_timesE23=h2_h3_dphi*(E2+E3);
+    h1_h2_dEta_timesE12=h1_h2_dEta*(E1+E2);
+    h1_h3_dEta_timesE13=h1_h3_dEta*(E1+E3);
+    h2_h3_dEta_timesE23=h2_h3_dEta*(E2+E3);
   }
 
+  if (tau_decay_mode<12) {
+    pi = rho.first; 
+  }
 
-        std::vector<float> inputs = {};
+  float Egamma1=-1, Egamma2=-1;
+  float Epi = pi.energy();
+  float Epi0 = pi0.energy();
 
-        if(tau_decay_mode<2) {
-          inputs.resize(24);
+  if(gammas_.size()>=1) Egamma1 = gammas_[0]->energy();
+  if(gammas_.size()>=2) Egamma2 = gammas_[1]->energy();
 
-          //inputs[0] = Egamma1_tau;
-          //inputs[1] = Egamma2_tau;
-          //inputs[2] = Epi_tau;
-          //inputs[3] = rho_dEta_tau;
-          //inputs[4] = rho_dphi_tau;
-          //inputs[5] = gammas_dEta_tau;
-          //inputs[6] = gammas_dR_tau;
-          //inputs[7] = DeltaR2WRTtau_tau;
-          inputs[8] = tau_decay_mode;
-          //inputs[9] = eta;
-          //inputs[10] = pt;
-          //inputs[11] = Epi0;
-          //inputs[12] = Epi;
-          //inputs[13] = rho_dEta;
-          //inputs[14] = rho_dphi;
-          //inputs[15] = gammas_dEta;
-          //inputs[16] = Mrho;
-          //inputs[17] = Mpi0;
-          //inputs[18] = DeltaR2WRTtau;
-          //inputs[19] = Mpi0_TwoHighGammas;
-          //inputs[20] = Mrho_OneHighGammas;
-          //inputs[21] = Mrho_TwoHighGammas;
-          //inputs[22] = Mrho_subleadingGamma;
-          //inputs[23] = strip_pt;
-        }
+  float Egamma1_tau = Egamma1/E;
+  float Egamma2_tau = Egamma2/E;
 
+  float Epi_tau = Epi/E;
+
+  float pt = tau->pt();
+  float eta = tau->eta();
+
+  float rho_dEta=-1, rho_dphi=-1, gammas_dEta = -1., gammas_dphi = -1.;
+
+  if(Epi0>0) {
+    rho_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(pi,pi0));
+    rho_dEta = std::fabs(pi.eta()-pi0.eta());
+  }
+  float rho_dEta_tau = rho_dEta*E;
+  float rho_dphi_tau = rho_dphi*E;
+
+  if(gammas_.size()>1) {
+    gammas_dphi =  std::fabs(ROOT::Math::VectorUtil::DeltaPhi(gammas_[0]->p4(),gammas_[1]->p4()));
+    gammas_dEta =  std::fabs(gammas_[0]->eta()-gammas_[1]->eta());
+  }
+  float gammas_dEta_tau = gammas_dEta* E;
+  float gammas_dR_tau =  sqrt(gammas_dEta*gammas_dEta + gammas_dphi*gammas_dphi)*E;
+
+  float Mpi0=-1, Mpi0_TwoHighGammas=-1;
+  Vector gammas_vector;
+  for (auto g : gammas_) gammas_vector+=g->p4();
+  Mpi0 = gammas_vector.M();
+  if(gammas_.size()>=2) Mpi0_TwoHighGammas = (gammas_[0]->p4() + gammas_[1]->p4()).M();
+
+  float Mrho=-1, Mrho_OneHighGammas=-1, Mrho_TwoHighGammas=-1, Mrho_subleadingGamma=-1;
+  Mrho = (pi + pi0).M();
+  if(gammas_.size()>=1) Mrho_OneHighGammas=(pi + gammas_[0]->p4() ).M();
+  if(gammas_.size()>=2) Mrho_TwoHighGammas=(pi + gammas_[0]->p4() + gammas_[1]->p4()).M();
+  if(gammas_.size()>=2) Mrho_subleadingGamma=(pi + gammas_[1]->p4()).M();
+
+  float DeltaR2WRTtau=-999;
+  if(gammas_.size()>=1){
+    DeltaR2WRTtau=0;
+    double SumPt=0;
+    DeltaR2WRTtau=std::pow(ROOT::Math::VectorUtil::DeltaR(pi,tau->p4()),2)*std::pow(pi.pt(),2);
+    SumPt=std::pow(pi.pt(),2);
+    for(auto g : gammas_){
+      DeltaR2WRTtau+=std::pow(ROOT::Math::VectorUtil::DeltaR(g->p4(),tau->p4()),2)*std::pow(g->pt(),2);
+      SumPt+=std::pow(g->pt(),2);
+    }
+    DeltaR2WRTtau/=SumPt;
+  }
+  float DeltaR2WRTtau_tau = DeltaR2WRTtau*E*E;
+
+  // once the variables are computed they need to be stored in the order expected by TMVA reader
+  std::vector<float> inputs = {};
+  if(tau_decay_mode<2) {
+    inputs.resize(24);
+
+    inputs[0] = Egamma1_tau;
+    inputs[1] = Egamma2_tau;
+    inputs[2] = Epi_tau;
+    inputs[3] = rho_dEta_tau;
+    inputs[4] = rho_dphi_tau;
+    inputs[5] = gammas_dEta_tau;
+    inputs[6] = gammas_dR_tau;
+    inputs[7] = DeltaR2WRTtau_tau;
+    inputs[8] = tau_decay_mode;
+    inputs[9] = eta;
+    inputs[10] = pt;
+    inputs[11] = Epi0;
+    inputs[12] = Epi;
+    inputs[13] = rho_dEta;
+    inputs[14] = rho_dphi;
+    inputs[15] = gammas_dEta;
+    inputs[16] = Mrho;
+    inputs[17] = Mpi0;
+    inputs[18] = DeltaR2WRTtau;
+    inputs[19] = Mpi0_TwoHighGammas;
+    inputs[20] = Mrho_OneHighGammas;
+    inputs[21] = Mrho_TwoHighGammas;
+    inputs[22] = Mrho_subleadingGamma;
+    inputs[23] = strip_pt;
+  }
+  if(tau_decay_mode>9) {
+    inputs.resize(40);
+
+    inputs[0] = E1_overEa1;
+    inputs[1] = E2_overEa1;
+    inputs[2] = E1_overEtau;
+    inputs[3] = E2_overEtau;
+    inputs[4] = E3_overEtau;
+    inputs[5] = a1_pi0_dEta_timesEtau;
+    inputs[6] = a1_pi0_dphi_timesEtau;
+    inputs[7] = h1_h2_dphi_timesE12;
+    inputs[8] = h1_h2_dEta_timesE12;
+    inputs[9] = h1_h3_dphi_timesE13;
+    inputs[10] = h1_h3_dEta_timesE13;
+    inputs[11] = h2_h3_dphi_timesE23;
+    inputs[12] = h2_h3_dEta_timesE23;
+    inputs[13] = gammas_dEta_tau;
+    inputs[14] = gammas_dR_tau;
+    inputs[15] = tau_decay_mode;
+    inputs[16] = mass0;
+    inputs[17] = mass1;
+    inputs[18] = mass2;
+    inputs[19] = E1;
+    inputs[20] = E2;
+    inputs[21] = E3;
+    inputs[22] = strip_E;
+    inputs[23] = a1_pi0_dEta;
+    inputs[24] = a1_pi0_dphi;
+    inputs[25] = strip_pt;
+    inputs[26] = pt;
+    inputs[27] = eta;
+    inputs[28] = E;
+    inputs[29] = h1_h2_dphi;
+    inputs[30] = h1_h3_dphi;
+    inputs[31] = h2_h3_dphi;
+    inputs[32] = h1_h2_dEta;
+    inputs[33] = h1_h3_dEta;
+    inputs[34] = h2_h3_dEta;
+    inputs[35] = Egamma1;
+    inputs[36] = Egamma2;
+    inputs[37] = gammas_dEta;
+    inputs[38] = Mpi0;
+    inputs[39] = Mpi0_TwoHighGammas;
+  }
 
   double mvaScore = -1;
   if((targetDM_<=2&&targetDM_>=0) || targetDM_==10 || targetDM_==11) mvaScore = targetDM_;
