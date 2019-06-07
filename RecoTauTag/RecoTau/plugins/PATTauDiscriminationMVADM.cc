@@ -2,6 +2,7 @@
 #include "Math/Vector4D.h"
 #include "Math/Vector4Dfwd.h"
 #include <Math/VectorUtil.h>
+#include "TMVA/Reader.h"
 
 /* class PATTauDiscriminationMVADM
  *
@@ -24,14 +25,39 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
     explicit PATTauDiscriminationMVADM(const edm::ParameterSet& iConfig)
         :PATTauDiscriminationProducerBase(iConfig){
           targetDM_        = iConfig.getParameter<int>("targetDM");
-
-          // setup mva reader here
+          TString input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoeven.xml";
+          TString input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoeven.xml";
+          TString input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoeven.xml";
+          TString input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd.xml"; 
+          reader_even_ = new TMVA::Reader();
+          reader_odd_ = new TMVA::Reader();
+          reader_dm10_even_ = new TMVA::Reader();
+          reader_dm10_odd_ = new TMVA::Reader();
+   
+          for(unsigned i=0; i<(unsigned)var_names_.size(); ++i){
+            reader_even_->AddVariable( var_names_[i], &(vars_[i]) );
+          }
+ 
         }
     ~PATTauDiscriminationMVADM() override{}
     double discriminate(const TauRef& tau) const override;
 
 
   private:
+
+    TMVA::Reader *reader_even_;
+    TMVA::Reader *reader_odd_;
+    TMVA::Reader *reader_dm10_even_;
+    TMVA::Reader *reader_dm10_odd_;
+
+    std::vector<float> vars_; 
+    std::vector<float> vars_dm10_;
+    //vars_.resize(24);
+    //vars_dm10_.resize(40);
+
+    std::vector<TString> var_names_ = {};
+    std::vector<TString> var_names_dm10_ = {};
+
     int targetDM_;
     mutable reco::CandidatePtrVector gammas_;
 
