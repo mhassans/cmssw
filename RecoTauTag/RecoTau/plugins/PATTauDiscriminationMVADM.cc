@@ -36,10 +36,23 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
    
           for(unsigned i=0; i<(unsigned)var_names_.size(); ++i){
             reader_even_->AddVariable( var_names_[i], &(vars_[i]) );
+            reader_odd_->AddVariable( var_names_[i], &(vars_[i]) );
           }
+          for(unsigned i=0; i<(unsigned)var_names_dm10_.size(); ++i){
+            reader_dm10_even_->AddVariable( var_names_dm10_[i], &(vars_dm10_[i]) );
+            reader_dm10_odd_->AddVariable( var_names_dm10_[i], &(vars_dm10_[i]) );
+          }
+
+          reader_even_->BookMVA( "BDT method", input_name_dm_0_1_applytoeven );
+          reader_odd_->BookMVA( "BDT method", input_name_dm_0_1_applytoodd );
+          reader_dm10_even_->BookMVA( "BDT method", input_name_dm_10_applytoeven );
+          reader_dm10_odd_->BookMVA( "BDT method", input_name_dm_10_applytoodd );
  
         }
     ~PATTauDiscriminationMVADM() override{}
+    std::vector<double> read_mva_score(std::vector<float> vars, int decay_mode);
+   
+    void beginEvent(const edm::Event&, const edm::EventSetup&) override;
     double discriminate(const TauRef& tau) const override;
 
 
@@ -50,18 +63,45 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
     TMVA::Reader *reader_dm10_even_;
     TMVA::Reader *reader_dm10_odd_;
 
-    std::vector<float> vars_; 
-    std::vector<float> vars_dm10_;
-    //vars_.resize(24);
-    //vars_dm10_.resize(40);
+    mutable std::vector<float> vars_ = std::vector<float>(24);
+    mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
 
-    std::vector<TString> var_names_ = {};
-    std::vector<TString> var_names_dm10_ = {};
+    std::vector<TString> var_names_      = { "Egamma1_tau", "Egamma2_tau", "Epi_tau", "rho_dEta_tau", "rho_dphi_tau",
+                                             "gammas_dEta_tau", "gammas_dR_tau", "DeltaR2WRTtau_tau", "tau_decay_mode",
+                                             "eta", "pt", "Epi0", "Epi", "rho_dEta", "rho_dphi", "gammas_dEta", "Mrho", 
+                                             "Mpi0", "DeltaR2WRTtau", "Mpi0_TwoHighGammas", "Mrho_OneHighGammas",
+                                             "Mrho_TwoHighGammas", "Mrho_subleadingGamma", "strip_pt" };
 
+    std::vector<TString> var_names_dm10_ = { "E1_overEa1", "E2_overEa1", "E1_overEtau", "E2_overEtau", "E3_overEtau",
+                                             "a1_pi0_dEta_timesEtau", "a1_pi0_dphi_timesEtau", "h1_h2_dphi_timesE12",
+                                             "h1_h2_dEta_timesE12", "h1_h3_dphi_timesE13", "h1_h3_dEta_timesE13",
+                                             "h2_h3_dphi_timesE23", "h2_h3_dEta_timesE23", "gammas_dEta_timesEtau",
+                                             "gammas_dR_timesEtau", "tau_decay_mode", "mass0", "mass1", "mass2", "E1", "E2",
+                                             "E3", "strip_E", "a1_pi0_dEta", "a1_pi0_dphi", "strip_pt", "pt", "eta", "E",
+                                             "h1_h2_dphi", "h1_h3_dphi", "h2_h3_dphi", "h1_h2_dEta", "h1_h3_dEta",
+                                             "h2_h3_dEta", "Egamma1", "Egamma2", "gammas_dEta", "Mpi0",
+                                             "Mpi0_TwoHighGammas"};
+
+    bool isEven_ = false;
     int targetDM_;
     mutable reco::CandidatePtrVector gammas_;
 
     typedef ROOT::Math::PtEtaPhiEVector Vector;
+
+    edm::Handle<TauCollection> taus_;
+
+    std::vector<float> read_mva_score(int decay_mode) const {
+      std::vector<float> mva_scores = {};
+      if(decay_mode==0 || decay_mode==1) {
+        if(isEven_) mva_scores = reader_even_->EvaluateMulticlass("BDT method");
+        else       mva_scores = reader_odd_->EvaluateMulticlass("BDT method");
+      } else if(decay_mode==10 || decay_mode==11) {
+        if(isEven_) mva_scores = reader_dm10_even_->EvaluateMulticlass("BDT method");
+        else       mva_scores = reader_dm10_odd_->EvaluateMulticlass("BDT method");
+      }
+      return mva_scores;
+    }
+
 
     Vector GetPi0 (reco::CandidatePtrVector gammas, bool leadEtaPhi) const {
       Vector pi0;
@@ -244,6 +284,11 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
  
 };
 
+void PATTauDiscriminationMVADM::beginEvent(const edm::Event& evt, const edm::EventSetup& es) {
+  isEven_ = evt.id().event() % 2 == 0;
+  evt.getByToken(Tau_token, taus_);
+}
+
 
 double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
   float gammas_pt_cut = 0.5; // change this for 94X samples
@@ -404,84 +449,96 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
   float DeltaR2WRTtau_tau = DeltaR2WRTtau*E*E;
 
   // once the variables are computed they need to be stored in the order expected by TMVA reader
-  std::vector<float> inputs = {};
+  std::vector<float> inputs;
   if(tau_decay_mode<2) {
+
     inputs.resize(24);
 
-    inputs[0] = Egamma1_tau;
-    inputs[1] = Egamma2_tau;
-    inputs[2] = Epi_tau;
-    inputs[3] = rho_dEta_tau;
-    inputs[4] = rho_dphi_tau;
-    inputs[5] = gammas_dEta_tau;
-    inputs[6] = gammas_dR_tau;
-    inputs[7] = DeltaR2WRTtau_tau;
-    inputs[8] = tau_decay_mode;
-    inputs[9] = eta;
-    inputs[10] = pt;
-    inputs[11] = Epi0;
-    inputs[12] = Epi;
-    inputs[13] = rho_dEta;
-    inputs[14] = rho_dphi;
-    inputs[15] = gammas_dEta;
-    inputs[16] = Mrho;
-    inputs[17] = Mpi0;
-    inputs[18] = DeltaR2WRTtau;
-    inputs[19] = Mpi0_TwoHighGammas;
-    inputs[20] = Mrho_OneHighGammas;
-    inputs[21] = Mrho_TwoHighGammas;
-    inputs[22] = Mrho_subleadingGamma;
-    inputs[23] = strip_pt;
+    vars_[0] = Egamma1_tau;
+    vars_[1] = Egamma2_tau;
+    vars_[2] = Epi_tau;
+    vars_[3] = rho_dEta_tau;
+    vars_[4] = rho_dphi_tau;
+    vars_[5] = gammas_dEta_tau;
+    vars_[6] = gammas_dR_tau;
+    vars_[7] = DeltaR2WRTtau_tau;
+    vars_[8] = tau_decay_mode;
+    vars_[9] = eta;
+    vars_[10] = pt;
+    vars_[11] = Epi0;
+    vars_[12] = Epi;
+    vars_[13] = rho_dEta;
+    vars_[14] = rho_dphi;
+    vars_[15] = gammas_dEta;
+    vars_[16] = Mrho;
+    vars_[17] = Mpi0;
+    vars_[18] = DeltaR2WRTtau;
+    vars_[19] = Mpi0_TwoHighGammas;
+    vars_[20] = Mrho_OneHighGammas;
+    vars_[21] = Mrho_TwoHighGammas;
+    vars_[22] = Mrho_subleadingGamma;
+    vars_[23] = strip_pt;
   }
   if(tau_decay_mode>9) {
+
     inputs.resize(40);
 
-    inputs[0] = E1_overEa1;
-    inputs[1] = E2_overEa1;
-    inputs[2] = E1_overEtau;
-    inputs[3] = E2_overEtau;
-    inputs[4] = E3_overEtau;
-    inputs[5] = a1_pi0_dEta_timesEtau;
-    inputs[6] = a1_pi0_dphi_timesEtau;
-    inputs[7] = h1_h2_dphi_timesE12;
-    inputs[8] = h1_h2_dEta_timesE12;
-    inputs[9] = h1_h3_dphi_timesE13;
-    inputs[10] = h1_h3_dEta_timesE13;
-    inputs[11] = h2_h3_dphi_timesE23;
-    inputs[12] = h2_h3_dEta_timesE23;
-    inputs[13] = gammas_dEta_tau;
-    inputs[14] = gammas_dR_tau;
-    inputs[15] = tau_decay_mode;
-    inputs[16] = mass0;
-    inputs[17] = mass1;
-    inputs[18] = mass2;
-    inputs[19] = E1;
-    inputs[20] = E2;
-    inputs[21] = E3;
-    inputs[22] = strip_E;
-    inputs[23] = a1_pi0_dEta;
-    inputs[24] = a1_pi0_dphi;
-    inputs[25] = strip_pt;
-    inputs[26] = pt;
-    inputs[27] = eta;
-    inputs[28] = E;
-    inputs[29] = h1_h2_dphi;
-    inputs[30] = h1_h3_dphi;
-    inputs[31] = h2_h3_dphi;
-    inputs[32] = h1_h2_dEta;
-    inputs[33] = h1_h3_dEta;
-    inputs[34] = h2_h3_dEta;
-    inputs[35] = Egamma1;
-    inputs[36] = Egamma2;
-    inputs[37] = gammas_dEta;
-    inputs[38] = Mpi0;
-    inputs[39] = Mpi0_TwoHighGammas;
+    vars_dm10_[0] = E1_overEa1;
+    vars_dm10_[1] = E2_overEa1;
+    vars_dm10_[2] = E1_overEtau;
+    vars_dm10_[3] = E2_overEtau;
+    vars_dm10_[4] = E3_overEtau;
+    vars_dm10_[5] = a1_pi0_dEta_timesEtau;
+    vars_dm10_[6] = a1_pi0_dphi_timesEtau;
+    vars_dm10_[7] = h1_h2_dphi_timesE12;
+    vars_dm10_[8] = h1_h2_dEta_timesE12;
+    vars_dm10_[9] = h1_h3_dphi_timesE13;
+    vars_dm10_[10] = h1_h3_dEta_timesE13;
+    vars_dm10_[11] = h2_h3_dphi_timesE23;
+    vars_dm10_[12] = h2_h3_dEta_timesE23;
+    vars_dm10_[13] = gammas_dEta_tau;
+    vars_dm10_[14] = gammas_dR_tau;
+    vars_dm10_[15] = tau_decay_mode;
+    vars_dm10_[16] = mass0;
+    vars_dm10_[17] = mass1;
+    vars_dm10_[18] = mass2;
+    vars_dm10_[19] = E1;
+    vars_dm10_[20] = E2;
+    vars_dm10_[21] = E3;
+    vars_dm10_[22] = strip_E;
+    vars_dm10_[23] = a1_pi0_dEta;
+    vars_dm10_[24] = a1_pi0_dphi;
+    vars_dm10_[25] = strip_pt;
+    vars_dm10_[26] = pt;
+    vars_dm10_[27] = eta;
+    vars_dm10_[28] = E;
+    vars_dm10_[29] = h1_h2_dphi;
+    vars_dm10_[30] = h1_h3_dphi;
+    vars_dm10_[31] = h2_h3_dphi;
+    vars_dm10_[32] = h1_h2_dEta;
+    vars_dm10_[33] = h1_h3_dEta;
+    vars_dm10_[34] = h2_h3_dEta;
+    vars_dm10_[35] = Egamma1;
+    vars_dm10_[36] = Egamma2;
+    vars_dm10_[37] = gammas_dEta;
+    vars_dm10_[38] = Mpi0;
+    vars_dm10_[39] = Mpi0_TwoHighGammas;
   }
 
   double mvaScore = -1;
-  if((targetDM_<=2&&targetDM_>=0) || targetDM_==10 || targetDM_==11) mvaScore = targetDM_;
+  std::vector<float> scores = read_mva_score((int)tau_decay_mode);
+  if(targetDM_==-1) mvaScore = scores[0];
+  if(tau_decay_mode==0 || tau_decay_mode==1) {
+    if(targetDM_==0) mvaScore = scores[2];  
+    if(targetDM_==1) mvaScore = scores[1];
+    if(targetDM_==2) mvaScore = scores[3];  
+  }
+  if(tau_decay_mode==10 || tau_decay_mode==11) {
+    if(targetDM_==10) mvaScore = scores[1];
+    if(targetDM_==11) mvaScore = scores[2];
+  }
   return mvaScore;
 }
 
-}
 DEFINE_FWK_MODULE(PATTauDiscriminationMVADM);
+}
