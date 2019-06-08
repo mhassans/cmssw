@@ -525,7 +525,7 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
     vars_dm10_[39] = Mpi0_TwoHighGammas;
   }
 
-  double mvaScore = -1;
+  double mvaScore = 0;
   std::vector<float> scores = read_mva_score((int)tau_decay_mode);
   if(targetDM_==-1) mvaScore = scores[0];
   if(tau_decay_mode==0 || tau_decay_mode==1) {
