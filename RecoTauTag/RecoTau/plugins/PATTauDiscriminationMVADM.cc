@@ -1,4 +1,4 @@
-#include "RecoTauTag/RecoTau/interface/TauDiscriminationProducerBase.h"
+#include "RecoTauTag/RecoTau/interface/MVADMDiscriminationProducerBase.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector4Dfwd.h"
 #include <Math/VectorUtil.h>
@@ -18,17 +18,33 @@ bool sortStrips (std::pair<T,U> i, std::pair<T,U> j) {
   return (i.first.pt() > j.first.pt());
 }
 
+bool sortByPT (reco::CandidatePtr i, reco::CandidatePtr j) {
+  return (i->pt() > j->pt());
+}
 
 
-class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase  {
+class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducerBase  {
   public:
     explicit PATTauDiscriminationMVADM(const edm::ParameterSet& iConfig)
-        :PATTauDiscriminationProducerBase(iConfig){
-          targetDM_        = iConfig.getParameter<int>("targetDM");
-          TString input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoeven.xml";
-          TString input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoeven.xml";
-          TString input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoeven.xml";
-          TString input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd.xml"; 
+        :PATTauMVADMDiscriminationProducerBase(iConfig){
+          version_ = iConfig.getParameter<std::string>("version");
+          TString input_name_dm_10_applytoeven;
+          TString input_name_dm_10_applytoodd;
+          TString input_name_dm_0_1_applytoeven;
+          TString input_name_dm_0_1_applytoodd;
+
+          if(version_ == "MVADM_2016_v1" || true) {
+            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoeven_2016v1.xml";
+            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoodd_2016v1.xml";
+            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoeven_2016v1.xml";
+            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd_2016v1.xml"; 
+          } 
+          if(version_ == "MVADM_2017_v1") {
+            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_11_applytoodd_2017v1.xml";
+            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_11_applytoodd_2017v1.xml";
+            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd_2017v1.xml";
+            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd_2017v1.xml";
+          }
           reader_even_ = new TMVA::Reader();
           reader_odd_ = new TMVA::Reader();
           reader_dm10_even_ = new TMVA::Reader();
@@ -47,21 +63,24 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
           reader_odd_->BookMVA( "BDT method", input_name_dm_0_1_applytoodd );
           reader_dm10_even_->BookMVA( "BDT method", input_name_dm_10_applytoeven );
           reader_dm10_odd_->BookMVA( "BDT method", input_name_dm_10_applytoodd );
- 
+
         }
     ~PATTauDiscriminationMVADM() override{}
     std::vector<double> read_mva_score(std::vector<float> vars, int decay_mode);
-   
+
     void beginEvent(const edm::Event&, const edm::EventSetup&) override;
-    double discriminate(const TauRef& tau) const override;
+    std::vector<float> discriminate(const TauRef& tau) const override;
 
 
   private:
+
 
     TMVA::Reader *reader_even_;
     TMVA::Reader *reader_odd_;
     TMVA::Reader *reader_dm10_even_;
     TMVA::Reader *reader_dm10_odd_;
+
+    std::string version_ = "MVADM_2016_v1";
 
     mutable std::vector<float> vars_ = std::vector<float>(24);
     mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
@@ -83,7 +102,7 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
                                              "Mpi0_TwoHighGammas"};
 
     bool isEven_ = false;
-    int targetDM_;
+    unsigned long long event_;
     mutable reco::CandidatePtrVector gammas_;
 
     typedef ROOT::Math::PtEtaPhiEVector Vector;
@@ -226,7 +245,8 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
   std::pair<std::vector<Vector>, Vector> GetA1 (const TauRef& tau, float gammas_pt_cut) const {
     std::vector<Vector> prongs;
     Vector pi0;
-    reco::CandidatePtrVector hads = tau->signalChargedHadrCands();
+    std::vector<reco::CandidatePtr> hads;
+    for (auto h : tau->signalChargedHadrCands()) hads.push_back(h);
     if(hads.size()==3) {
       // arrange hadrons so the oppositly charged hadron is contained in the first element
       if(hads[1]->charge()!=hads[0]->charge()&&hads[1]->charge()!=hads[2]->charge()){
@@ -250,8 +270,15 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
       }
     }
 
-    reco::CandidatePtrVector gammas;
-    for (auto g: tau->isolationGammaCands()) if(g->pt()>gammas_pt_cut) gammas.push_back(g); // change to signal gammas for 94X
+    std::vector<reco::CandidatePtr> gammas_merge;
+    for (auto g: tau->signalGammaCands()) if(g->pt()>gammas_pt_cut) gammas_merge.push_back(g);
+    if(tau->decayMode()!=11){
+      for (auto g: tau->isolationGammaCands()) if(g->pt()>gammas_pt_cut) gammas_merge.push_back(g); 
+    } 
+    std::sort(gammas_merge.begin(), gammas_merge.end(), sortByPT);
+    reco::CandidatePtrVector gammas = {};
+    for(auto g: gammas_merge) gammas.push_back(g);
+
     double cone_size = std::max(std::min(0.1, 3./tau->pt()),0.05);
     std::vector<std::pair<Vector, reco::CandidatePtrVector>> strip_pairs = HPSGammas(gammas);
     std::vector<std::pair<Vector, reco::CandidatePtrVector>> strips_incone; 
@@ -277,7 +304,8 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
       for (auto g : closest_strip.second) signal_gammas.push_back(g);
     }
     gammas_ = signal_gammas;
-    for (auto h : hads) prongs.push_back((Vector)h->p4());  
+    for (auto h : hads) prongs.push_back((Vector)h->p4());
+
     return std::make_pair(prongs, pi0);
   }
 
@@ -286,24 +314,27 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
 
 void PATTauDiscriminationMVADM::beginEvent(const edm::Event& evt, const edm::EventSetup& es) {
   isEven_ = evt.id().event() % 2 == 0;
+  event_ = evt.id().event();
   evt.getByToken(Tau_token, taus_);
 }
 
 
-double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
-  float gammas_pt_cut = 0.5; // change this for 94X samples
+std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
+  double gammas_pt_cut;
+  if (version_=="MVADM_2016_v1") gammas_pt_cut=0.5;
+  if (version_=="MVADM_2017_v1") gammas_pt_cut=1.0;
+
+  std::vector<float> scores= {};
   gammas_.clear();
   // define all variables used by MVA
   float tau_decay_mode = tau->decayMode();
 
-  if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return 0.;
+  if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return scores;
 
   Vector pi0;
   Vector pi;
   std::pair<Vector,Vector> rho;
   std::vector<Vector> a1_daughters = {};
-
-  if(tau_decay_mode>1&&tau_decay_mode<10) return -1;
 
   if(tau_decay_mode>=10) {
     std::pair<std::vector<Vector>, Vector>  a1 = GetA1(tau, gammas_pt_cut);
@@ -525,20 +556,11 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
     vars_dm10_[39] = Mpi0_TwoHighGammas;
   }
 
-  double mvaScore = 0;
-  std::vector<float> scores = read_mva_score((int)tau_decay_mode);
-  if(targetDM_==-1) mvaScore = scores[0];
-  if(tau_decay_mode==0 || tau_decay_mode==1) {
-    if(targetDM_==0) mvaScore = scores[2];  
-    if(targetDM_==1) mvaScore = scores[1];
-    if(targetDM_==2) mvaScore = scores[3];  
-  }
-  if(tau_decay_mode==10 || tau_decay_mode==11) {
-    if(targetDM_==10) mvaScore = scores[1];
-    if(targetDM_==11) mvaScore = scores[2];
-  }
-  return mvaScore;
+  scores = read_mva_score((int)tau_decay_mode);
+
+  return scores;
 }
+
 
 DEFINE_FWK_MODULE(PATTauDiscriminationMVADM);
 }
