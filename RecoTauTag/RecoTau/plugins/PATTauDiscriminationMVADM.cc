@@ -18,7 +18,8 @@ bool sortStrips (std::pair<T,U> i, std::pair<T,U> j) {
   return (i.first.pt() > j.first.pt());
 }
 
-bool sortByPT (reco::CandidatePtr i, reco::CandidatePtr j) {
+template <class T>
+bool sortByPT (T i, T j) {
   return (i->pt() > j->pt());
 }
 
@@ -33,18 +34,22 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           TString input_name_dm_0_1_applytoeven;
           TString input_name_dm_0_1_applytoodd;
 
-          if(version_ == "MVADM_2016_v1" || true) {
-            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoeven_2016v1.xml";
-            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_applytoodd_2016v1.xml";
-            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoeven_2016v1.xml";
-            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd_2016v1.xml"; 
-          } 
-          if(version_ == "MVADM_2017_v1") {
-            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_11_applytoodd_2017v1.xml";
-            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_10_11_applytoodd_2017v1.xml";
-            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd_2017v1.xml";
-            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_dm_0_1_applytoodd_2017v1.xml";
+          if(version_ == "MVADM_2016_v1") {
+            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2016v1_dm10.xml";
+            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2016v1_dm10.xml";
+            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2016v1_dm0_dm1.xml";
+            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2016v1_dm0_dm1.xml";
           }
+          if(version_ == "MVADM_2017_v1") {
+            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2017v1_dm10.xml";
+            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2017v1_dm10.xml";
+            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2017v1_dm0_dm1.xml";
+            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2017v1_dm0_dm1.xml";
+          }
+          else {
+            cms::Exception("MVA DM version not found") << "Requested version of ID does not exist."; 
+          }
+
           reader_even_ = new TMVA::Reader();
           reader_odd_ = new TMVA::Reader();
           reader_dm10_even_ = new TMVA::Reader();
@@ -90,7 +95,6 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
                                              "eta", "pt", "Epi0", "Epi", "rho_dEta", "rho_dphi", "gammas_dEta", "Mrho", 
                                              "Mpi0", "DeltaR2WRTtau", "Mpi0_TwoHighGammas", "Mrho_OneHighGammas",
                                              "Mrho_TwoHighGammas", "Mrho_subleadingGamma", "strip_pt" };
-
     std::vector<TString> var_names_dm10_ = { "E1_overEa1", "E2_overEa1", "E1_overEtau", "E2_overEtau", "E3_overEtau",
                                              "a1_pi0_dEta_timesEtau", "a1_pi0_dphi_timesEtau", "h1_h2_dphi_timesE12",
                                              "h1_h2_dEta_timesE12", "h1_h3_dphi_timesE13", "h1_h3_dEta_timesE13",
@@ -103,7 +107,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
 
     bool isEven_ = false;
     unsigned long long event_;
-    mutable reco::CandidatePtrVector gammas_;
+    mutable std::vector<reco::CandidatePtr> gammas_;
 
     typedef ROOT::Math::PtEtaPhiEVector Vector;
 
@@ -122,7 +126,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     }
 
 
-    Vector GetPi0 (reco::CandidatePtrVector gammas, bool leadEtaPhi) const {
+    Vector GetPi0 (std::vector<reco::CandidatePtr> gammas, bool leadEtaPhi) const {
       Vector pi0;
       if(gammas.size()>0) {
         double E = 0.;
@@ -152,21 +156,22 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     }
 
 
-    std::vector<std::pair<Vector,reco::CandidatePtrVector>> HPSGammas (reco::CandidatePtrVector cands) const {
-      std::vector<std::pair<Vector,reco::CandidatePtrVector>> strips;   
+    std::vector<std::pair<Vector,std::vector<reco::CandidatePtr>>> HPSGammas (std::vector<reco::CandidatePtr> cands) const {
+      std::vector<std::pair<Vector,std::vector<reco::CandidatePtr>>> strips;   
       while(!cands.empty()) {
   
-        reco::CandidatePtrVector Associated = {};
-        reco::CandidatePtrVector notAssociated = {};
+        std::vector<reco::CandidatePtr> Associated = {};
+        std::vector<reco::CandidatePtr> notAssociated = {};
   
         Vector stripVector(0,0,0,0);
         stripVector=cands[0]->p4();
         Associated.push_back(cands[0]);
  
         bool repeat = true;
+        unsigned int mini=1;
         while (repeat) {
           repeat = false;
-          for(unsigned int i=1;i<cands.size();++i) {
+          for(unsigned int i=mini;i<cands.size();++i) {
             double etaAssociationDistance = 0.20*pow(cands[i]->pt(),-0.66) + 0.20*pow(stripVector.Pt(),-0.66);
             double phiAssociationDistance = 0.35*pow(cands[i]->pt(),-0.71) + 0.35*pow(stripVector.Pt(),-0.71);
             etaAssociationDistance = std::min(etaAssociationDistance, 0.15);
@@ -186,13 +191,14 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           }
           cands.swap(notAssociated);
           notAssociated.clear(); 
+          mini=0;
         }
 
         Vector strip = GetPi0(Associated, false);
         strips.push_back(std::make_pair(strip, Associated));
  
       }
-      std::sort(strips.begin(), strips.end(), sortStrips<Vector, reco::CandidatePtrVector>);
+      std::sort(strips.begin(), strips.end(), sortStrips<Vector, std::vector<reco::CandidatePtr>>);
   
       return strips;
     }
@@ -203,42 +209,31 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
       Vector pi0;
       gammas_.clear();
 
-      reco::CandidatePtrVector gammas;
+      std::vector<reco::CandidatePtr> gammas;
       for (auto g: tau->signalGammaCands()) if(g->pt()>gammas_pt_cut) gammas.push_back(g);
       reco::CandidatePtrVector hads = tau->signalChargedHadrCands();
 
       if(hads.size()>0) pi = hads[0]->p4();
 
       double cone_size = std::max(std::min(0.1, 3./tau->pt()),0.05);
-      std::vector<std::pair<Vector, reco::CandidatePtrVector>> strip_pairs = HPSGammas(gammas);
-      std::vector<std::pair<Vector, reco::CandidatePtrVector>> strips_incone;
+      std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
+      std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strips_incone;
       for(auto s : strip_pairs) {
         if(std::fabs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
       }
       if(tau->decayMode()==0) {
         if(strips_incone.size()>0) {
           gammas = strips_incone[0].second;
-          for (auto s : strips_incone) {
-            for (auto g : s.second) gammas_.push_back(g);
-          }
         } else if(strip_pairs.size()>0) {
-          double min_dR = 0.4;
-          std::pair<Vector,reco::CandidatePtrVector> closest_strip;
-          for (auto s : strip_pairs) {
-            double dR = ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4());
-            if(dR<min_dR) {
-              min_dR = dR;
-              closest_strip = s;
-            }
-          }
-          gammas = closest_strip.second;
-          gammas_ = gammas;
+          gammas = strip_pairs[0].second;
         }
-      } else {
-        gammas_ = gammas;
       }
-      pi0 = GetPi0(gammas, true);
-    
+      if(tau->decayMode()==1) pi0 = GetPi0(strip_pairs[0].second, true);
+      else {
+        pi0 = GetPi0(gammas, true);
+      }
+      std::sort(gammas.begin(), gammas.end(), sortByPT<reco::CandidatePtr>); 
+      gammas_ = gammas;
       return std::make_pair(pi,pi0);
     }
 
@@ -275,35 +270,25 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     if(tau->decayMode()!=11){
       for (auto g: tau->isolationGammaCands()) if(g->pt()>gammas_pt_cut) gammas_merge.push_back(g); 
     } 
-    std::sort(gammas_merge.begin(), gammas_merge.end(), sortByPT);
-    reco::CandidatePtrVector gammas = {};
+    std::sort(gammas_merge.begin(), gammas_merge.end(), sortByPT<reco::CandidatePtr>);
+    std::vector<reco::CandidatePtr> gammas = {};
     for(auto g: gammas_merge) gammas.push_back(g);
-
     double cone_size = std::max(std::min(0.1, 3./tau->pt()),0.05);
-    std::vector<std::pair<Vector, reco::CandidatePtrVector>> strip_pairs = HPSGammas(gammas);
-    std::vector<std::pair<Vector, reco::CandidatePtrVector>> strips_incone; 
+    std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
+    std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strips_incone; 
     for(auto s : strip_pairs) if(std::fabs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
      
-    reco::CandidatePtrVector signal_gammas = {};
+    std::vector<reco::CandidatePtr> signal_gammas = {};
+
     if(strips_incone.size()>0) {
-      pi0 = GetPi0(strips_incone[0].second, true);
-      for (auto s : strips_incone) {
-        for (auto g : s.second) signal_gammas.push_back(g);
-      } 
+      signal_gammas = strips_incone[0].second;
     } else if(strip_pairs.size()>0) {
-      double min_dR = 0.4;
-      std::pair<Vector, reco::CandidatePtrVector> closest_strip;
-      for (auto s : strip_pairs) {
-        double dR = ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4());
-        if(dR<min_dR) {
-          min_dR = dR;
-          closest_strip = s;
-        }
-      }
-      pi0 = GetPi0(closest_strip.second, true);
-      for (auto g : closest_strip.second) signal_gammas.push_back(g);
+      signal_gammas = strip_pairs[0].second;
     }
+    pi0 = GetPi0(signal_gammas, true);
+    std::sort(signal_gammas.begin(), signal_gammas.end(), sortByPT<reco::CandidatePtr>);
     gammas_ = signal_gammas;
+
     for (auto h : hads) prongs.push_back((Vector)h->p4());
 
     return std::make_pair(prongs, pi0);
@@ -378,7 +363,7 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
   float E2_overEtau=-1;
   float E3_overEtau=-1;
 
-  if(tau_decay_mode>9) {
+  if(tau_decay_mode>9 && a1_daughters.size()>2) {
     strip_E = pi0.energy();
     mass0 = (a1_daughters[0] + a1_daughters[1] + a1_daughters[2]).M();
     mass1 = (a1_daughters[0] + a1_daughters[1]).M();
@@ -387,21 +372,10 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
     E2 = a1_daughters[1].energy();
     E3 = a1_daughters[2].energy();
 
-    float Ea1 = E1+E2+E3;
-    E1_overEa1 = E1/Ea1;
-    E2_overEa1 = E2/Ea1;
-    float Etau = Ea1+strip_E;
-    E1_overEtau = E1/Etau;
-    E2_overEtau = E2/Etau;
-    E3_overEtau = E3/Etau;
-
     if(strip_pt>0) {
       a1_pi0_dEta = std::fabs(pi0.eta()-tau->eta());
       a1_pi0_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(pi0,tau->p4()));
     }
-
-    a1_pi0_dEta_timesEtau=a1_pi0_dEta*Etau;
-    a1_pi0_dphi_timesEtau=a1_pi0_dphi*Etau;
 
     h1_h2_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[1]));
     h1_h3_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[2]));
@@ -409,14 +383,24 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
     h1_h2_dEta = std::fabs(a1_daughters[0].eta()-a1_daughters[1].eta());
     h1_h3_dEta = std::fabs(a1_daughters[0].eta()-a1_daughters[2].eta());
     h2_h3_dEta = std::fabs(a1_daughters[1].eta()-a1_daughters[2].eta());
-
-    h1_h2_dphi_timesE12=h1_h2_dphi*(E1+E2);
-    h1_h3_dphi_timesE13=h1_h3_dphi*(E1+E3);
-    h2_h3_dphi_timesE23=h2_h3_dphi*(E2+E3);
-    h1_h2_dEta_timesE12=h1_h2_dEta*(E1+E2);
-    h1_h3_dEta_timesE13=h1_h3_dEta*(E1+E3);
-    h2_h3_dEta_timesE23=h2_h3_dEta*(E2+E3);
   }
+
+  float Ea1 = E1+E2+E3;
+  E1_overEa1 = E1/Ea1;
+  E2_overEa1 = E2/Ea1;
+  float Etau = Ea1+strip_E;
+  E1_overEtau = E1/Etau;
+  E2_overEtau = E2/Etau;
+  E3_overEtau = E3/Etau;
+  a1_pi0_dEta_timesEtau=a1_pi0_dEta*Etau;
+  a1_pi0_dphi_timesEtau=a1_pi0_dphi*Etau;
+  h1_h2_dphi_timesE12=h1_h2_dphi*(E1+E2);
+  h1_h3_dphi_timesE13=h1_h3_dphi*(E1+E3);
+  h2_h3_dphi_timesE23=h2_h3_dphi*(E2+E3);
+  h1_h2_dEta_timesE12=h1_h2_dEta*(E1+E2);
+  h1_h3_dEta_timesE13=h1_h3_dEta*(E1+E3);
+  h2_h3_dEta_timesE23=h2_h3_dEta*(E2+E3);
+
 
   if (tau_decay_mode<12) {
     pi = rho.first; 

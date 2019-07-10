@@ -1003,6 +1003,28 @@ class TauIDEmbedder(object):
           self.process.rerunMvaIsolationTask.add(self.process.patDiscriminationMVADM2016v1Task)
           self.process.rerunMvaIsolationSequence += self.process.patDiscriminationMVADM2016v1Seq
 
+        if "MVADM_2017_v1" in self.toKeep:
+          self.process.patDiscriminationMVADM2017v1 = self.cms.EDProducer("PATTauDiscriminationMVADM",
+            PATTauProducer = self.cms.InputTag('slimmedTaus'),
+            version = self.cms.string('MVADM_2017_v1'),
+          )
+
+
+          tauIDSources.MVADM2017v1DMotherraw = self.cms.InputTag('patDiscriminationMVADM2017v1','DMother')
+          tauIDSources.MVADM2017v1DM0raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM0')
+          tauIDSources.MVADM2017v1DM1raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM1')
+          tauIDSources.MVADM2017v1DM2raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM2')
+          tauIDSources.MVADM2017v1DM10raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM10')
+          tauIDSources.MVADM2017v1DM11raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM11')
+          tauIDSources.MVADM2017v1 = self.cms.InputTag('patDiscriminationMVADM2017v1')
+
+          self.process.patDiscriminationMVADM2017v1Task = self.cms.Task(
+                self.process.patDiscriminationMVADM2017v1
+          )
+          self.process.patDiscriminationMVADM2017v1Seq = self.cms.Sequence(self.process.patDiscriminationMVADM2017v1Task)
+          self.process.rerunMvaIsolationTask.add(self.process.patDiscriminationMVADM2017v1Task)
+          self.process.rerunMvaIsolationSequence += self.process.patDiscriminationMVADM2017v1Seq
+
         ##
         print('Embedding new TauIDs into \"'+self.updatedTauName+'\"')
         embedID = self.cms.EDProducer("PATTauIDEmbedder",
