@@ -1,0 +1,3 @@
+[submodule "VertexRefit/TauRefit"]
+	path = VertexRefit/TauRefit
+	url = https://github.com/danielwinterbottom/TauRefit.git
