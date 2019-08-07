@@ -7,7 +7,7 @@ class TauIDEmbedder(object):
     """class to rerun the tau seq and acces trainings from the database"""
     availableDiscriminators = [
         "2017v1", "2017v2", "newDM2017v2", "dR0p32017v2", "2016v1", "newDM2016v1",
-        "deepTau2017v1", "deepTau2017v2", "DPFTau_2016_v0", "DPFTau_2016_v1", "againstEle2018"
+        "deepTau2017v1", "deepTau2017v2", "DPFTau_2016_v0", "DPFTau_2016_v1", "againstEle2018", "MVADM_2016_v1", "MVADM_2017_v1"
     ]
 
     def __init__(self, process, cms, debug = False,
