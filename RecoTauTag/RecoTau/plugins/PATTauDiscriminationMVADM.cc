@@ -228,7 +228,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           gammas = strip_pairs[0].second;
         }
       }
-      if(tau->decayMode()==1) pi0 = GetPi0(strip_pairs[0].second, true);
+      if(tau->decayMode()==1 && strip_pairs.size()>0) pi0 = GetPi0(strip_pairs[0].second, true);
       else {
         pi0 = GetPi0(gammas, true);
       }
