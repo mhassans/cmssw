@@ -34,12 +34,6 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           TString input_name_dm_0_1_applytoeven;
           TString input_name_dm_0_1_applytoodd;
 
-          if(version_ == "MVADM_2016_v1") {
-            input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2016v1_dm10.xml";
-            input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2016v1_dm10.xml";
-            input_name_dm_0_1_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2016v1_dm0_dm1.xml";
-            input_name_dm_0_1_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2016v1_dm0_dm1.xml";
-          }
           if(version_ == "MVADM_2017_v1") {
             input_name_dm_10_applytoeven = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoeven_2017v1_dm10.xml";
             input_name_dm_10_applytoodd = (std::string)getenv("CMSSW_BASE") + "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2017v1_dm10.xml";
@@ -85,7 +79,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     TMVA::Reader *reader_dm10_even_;
     TMVA::Reader *reader_dm10_odd_;
 
-    std::string version_ = "MVADM_2016_v1";
+    std::string version_ = "MVADM_2017_v1";
 
     mutable std::vector<float> vars_ = std::vector<float>(24);
     mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
@@ -306,7 +300,6 @@ void PATTauDiscriminationMVADM::beginEvent(const edm::Event& evt, const edm::Eve
 
 std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
   double gammas_pt_cut;
-  if (version_=="MVADM_2016_v1") gammas_pt_cut=0.5;
   if (version_=="MVADM_2017_v1") gammas_pt_cut=1.0;
 
   std::vector<float> scores= {};
