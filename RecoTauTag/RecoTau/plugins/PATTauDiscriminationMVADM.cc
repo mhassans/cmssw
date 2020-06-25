@@ -49,11 +49,11 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           reader_dm10_even_ = new TMVA::Reader();
           reader_dm10_odd_ = new TMVA::Reader();
    
-          for(unsigned i=0; i<(unsigned)var_names_.size(); ++i){
+          for(size_t i=0; i<var_names_.size(); ++i){
             reader_even_->AddVariable( var_names_[i], &(vars_[i]) );
             reader_odd_->AddVariable( var_names_[i], &(vars_[i]) );
           }
-          for(unsigned i=0; i<(unsigned)var_names_dm10_.size(); ++i){
+          for(size_t i=0; i<var_names_dm10_.size(); ++i){
             reader_dm10_even_->AddVariable( var_names_dm10_[i], &(vars_dm10_[i]) );
             reader_dm10_odd_->AddVariable( var_names_dm10_[i], &(vars_dm10_[i]) );
           }
@@ -81,8 +81,8 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
 
     std::string version_ = "MVADM_2017_v1";
 
-    mutable std::vector<float> vars_ = std::vector<float>(24);
-    mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
+    mutable std::vector<float> vars_(24);
+    mutable std::vector<float> vars_dm10_(24);
 
     std::vector<TString> var_names_      = { "Egamma1_tau", "Egamma2_tau", "Epi_tau", "rho_dEta_tau", "rho_dphi_tau",
                                              "gammas_dEta_tau", "gammas_dR_tau", "DeltaR2WRTtau_tau", "tau_decay_mode",
@@ -103,7 +103,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     unsigned long long event_;
     mutable std::vector<reco::CandidatePtr> gammas_;
 
-    typedef ROOT::Math::PtEtaPhiEVector Vector;
+    typedef ROOT::Math::PtEtaPhiEVector PtEtaPhiELV;
 
     edm::Handle<TauCollection> taus_;
 
@@ -120,19 +120,19 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     }
 
 
-    Vector GetPi0 (std::vector<reco::CandidatePtr> gammas, bool leadEtaPhi) const {
-      Vector pi0;
+    PtEtaPhiELV getPi0 (std::vector<reco::CandidatePtr> gammas, bool leadEtaPhi) const {
+      PtEtaPhiELV pi0;
       if(gammas.size()>0) {
-        double E = 0.;
+        double tot_energy = 0.;
         double phi = 0.;
         double eta = 0.;
         for(auto g: gammas) {
-          E+=g->energy();
+          tot_energy+=g->energy();
           phi+=g->energy()*g->phi();
           eta+=g->energy()*g->eta();
         }
-        eta/=E;
-        phi/=E;
+        eta/=tot_energy;
+        phi/=tot_energy;
   
         if(leadEtaPhi){
           // if true sets the eta and phi of the pi0 to that of the leading gamma rather than using the weighted average
@@ -141,25 +141,25 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
         }
   
         double mass = 0.1349;
-        double p = sqrt(E*E-mass*mass);
+        double p = sqrt(tot_energy*tot_energy-mass*mass);
         double theta = atan(exp(-eta))*2;
         double pt = p*sin(theta);
-        pi0 = Vector(pt,eta,phi,E);
+        pi0.SetCoordinates(pt, eta, phi, tot_energy);
       }
       return pi0;
     }
 
 
-    std::vector<std::pair<Vector,std::vector<reco::CandidatePtr>>> HPSGammas (std::vector<reco::CandidatePtr> cands) const {
-      std::vector<std::pair<Vector,std::vector<reco::CandidatePtr>>> strips;   
+    std::vector<std::pair<PtEtaPhiELV,std::vector<reco::CandidatePtr>>> HPSGammas (std::vector<reco::CandidatePtr> cands) const {
+      std::vector<std::pair<PtEtaPhiELV,std::vector<reco::CandidatePtr>>> strips;   
       while(!cands.empty()) {
   
-        std::vector<reco::CandidatePtr> Associated = {};
+        std::vector<reco::CandidatePtr> associated = {};
         std::vector<reco::CandidatePtr> notAssociated = {};
   
-        Vector stripVector(0,0,0,0);
+        PtEtaPhiELV stripVector(0,0,0,0);
         stripVector=cands[0]->p4();
-        Associated.push_back(cands[0]);
+        associated.push_back(cands[0]);
  
         bool repeat = true;
         unsigned int mini=1;
@@ -173,10 +173,10 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
             phiAssociationDistance = std::min(phiAssociationDistance, 0.30);
             phiAssociationDistance = std::max(phiAssociationDistance, 0.05);
   
-            if(fabs(cands[i]->eta()-stripVector.eta())<etaAssociationDistance &&
+            if(std::abs(cands[i]->eta()-stripVector.eta())<etaAssociationDistance &&
               fabs(ROOT::Math::VectorUtil::DeltaPhi(cands[i]->p4(),stripVector))<phiAssociationDistance) {
               stripVector+=cands[i]->p4();
-              Associated.push_back(cands[i]);
+              associated.push_back(cands[i]);
               repeat = true;
             }
             else {
@@ -188,19 +188,19 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           mini=0;
         }
 
-        Vector strip = GetPi0(Associated, false);
-        strips.push_back(std::make_pair(strip, Associated));
+        PtEtaPhiELV strip = getPi0(associated, false);
+        strips.push_back(std::make_pair(strip, associated));
  
       }
-      std::sort(strips.begin(), strips.end(), sortStrips<Vector, std::vector<reco::CandidatePtr>>);
+      std::sort(strips.begin(), strips.end(), sortStrips<PtEtaPhiELV, std::vector<reco::CandidatePtr>>);
   
       return strips;
     }
 
 
-    std::pair<Vector,Vector> GetRho (const TauRef& tau, double gammas_pt_cut) const {
-      Vector pi;
-      Vector pi0;
+    std::pair<PtEtaPhiELV,PtEtaPhiELV> getRho (const TauRef& tau, double gammas_pt_cut) const {
+      PtEtaPhiELV pi;
+      PtEtaPhiELV pi0;
       gammas_.clear();
 
       std::vector<reco::CandidatePtr> gammas;
@@ -210,10 +210,10 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
       if(hads.size()>0) pi = hads[0]->p4();
 
       double cone_size = std::max(std::min(0.1, 3./tau->pt()),0.05);
-      std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
-      std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strips_incone;
+      std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
+      std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strips_incone;
       for(auto s : strip_pairs) {
-        if(std::fabs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
+        if(std::abs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
       }
       if(tau->decayMode()==0) {
         if(strips_incone.size()>0) {
@@ -222,18 +222,18 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           gammas = strip_pairs[0].second;
         }
       }
-      if(tau->decayMode()==1 && strip_pairs.size()>0) pi0 = GetPi0(strip_pairs[0].second, true);
+      if(tau->decayMode()==1 && strip_pairs.size()>0) pi0 = getPi0(strip_pairs[0].second, true);
       else {
-        pi0 = GetPi0(gammas, true);
+        pi0 = getPi0(gammas, true);
       }
       std::sort(gammas.begin(), gammas.end(), sortByPT<reco::CandidatePtr>); 
       gammas_ = gammas;
       return std::make_pair(pi,pi0);
     }
 
-  std::pair<std::vector<Vector>, Vector> GetA1 (const TauRef& tau, float gammas_pt_cut) const {
-    std::vector<Vector> prongs;
-    Vector pi0;
+  std::pair<std::vector<PtEtaPhiELV>, PtEtaPhiELV> getA1 (const TauRef& tau, float gammas_pt_cut) const {
+    std::vector<PtEtaPhiELV> prongs;
+    PtEtaPhiELV pi0;
     std::vector<reco::CandidatePtr> hads;
     for (auto h : tau->signalChargedHadrCands()) hads.push_back(h);
     if(hads.size()==3) {
@@ -250,8 +250,8 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
       } 
       // from the two same sign hadrons place the one that gives the mass most similar to the rho meson as the second element
       double rho_mass = 0.7755;
-      double dM1 = std::fabs((hads[0]->p4()+hads[1]->p4()).M()-rho_mass);
-      double dM2 = std::fabs((hads[0]->p4()+hads[2]->p4()).M()-rho_mass);
+      double dM1 = std::abs((hads[0]->p4()+hads[1]->p4()).M()-rho_mass);
+      double dM2 = std::abs((hads[0]->p4()+hads[2]->p4()).M()-rho_mass);
       if(dM2<dM1){
         auto temp = hads[2];
         hads[2] = hads[1];
@@ -268,9 +268,9 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     std::vector<reco::CandidatePtr> gammas = {};
     for(auto g: gammas_merge) gammas.push_back(g);
     double cone_size = std::max(std::min(0.1, 3./tau->pt()),0.05);
-    std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
-    std::vector<std::pair<Vector, std::vector<reco::CandidatePtr>>> strips_incone; 
-    for(auto s : strip_pairs) if(std::fabs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
+    std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
+    std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strips_incone; 
+    for(auto s : strip_pairs) if(std::abs(ROOT::Math::VectorUtil::DeltaR(s.first,tau->p4()))<cone_size) strips_incone.push_back(s);
      
     std::vector<reco::CandidatePtr> signal_gammas = {};
 
@@ -279,11 +279,11 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     } else if(strip_pairs.size()>0) {
       signal_gammas = strip_pairs[0].second;
     }
-    pi0 = GetPi0(signal_gammas, true);
+    pi0 = getPi0(signal_gammas, true);
     std::sort(signal_gammas.begin(), signal_gammas.end(), sortByPT<reco::CandidatePtr>);
     gammas_ = signal_gammas;
 
-    for (auto h : hads) prongs.push_back((Vector)h->p4());
+    for (auto h : hads) prongs.push_back((PtEtaPhiELV)h->p4());
 
     return std::make_pair(prongs, pi0);
   }
@@ -309,18 +309,18 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
 
   if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return scores;
 
-  Vector pi0;
-  Vector pi;
-  std::pair<Vector,Vector> rho;
-  std::vector<Vector> a1_daughters = {};
+  PtEtaPhiELV pi0;
+  PtEtaPhiELV pi;
+  std::pair<PtEtaPhiELV,PtEtaPhiELV> rho;
+  std::vector<PtEtaPhiELV> a1_daughters = {};
 
   if(tau_decay_mode>=10) {
-    std::pair<std::vector<Vector>, Vector>  a1 = GetA1(tau, gammas_pt_cut);
+    std::pair<std::vector<PtEtaPhiELV>, PtEtaPhiELV>  a1 = getA1(tau, gammas_pt_cut);
     a1_daughters  = a1.first;
     pi0 = a1.second;
   } else {
     for (auto g: tau->signalGammaCands()) if(g->pt()>gammas_pt_cut) gammas_.push_back(g);
-    rho = GetRho (tau, gammas_pt_cut);
+    rho = getRho (tau, gammas_pt_cut);
     pi0 = rho.second;
   }
  
@@ -366,16 +366,16 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
     E3 = a1_daughters[2].energy();
 
     if(strip_pt>0) {
-      a1_pi0_dEta = std::fabs(pi0.eta()-tau->eta());
-      a1_pi0_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(pi0,tau->p4()));
+      a1_pi0_dEta = std::abs(pi0.eta()-tau->eta());
+      a1_pi0_dphi = std::abs(ROOT::Math::VectorUtil::DeltaPhi(pi0,tau->p4()));
     }
 
-    h1_h2_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[1]));
-    h1_h3_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[2]));
-    h2_h3_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[1],a1_daughters[2]));
-    h1_h2_dEta = std::fabs(a1_daughters[0].eta()-a1_daughters[1].eta());
-    h1_h3_dEta = std::fabs(a1_daughters[0].eta()-a1_daughters[2].eta());
-    h2_h3_dEta = std::fabs(a1_daughters[1].eta()-a1_daughters[2].eta());
+    h1_h2_dphi = std::abs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[1]));
+    h1_h3_dphi = std::abs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[0],a1_daughters[2]));
+    h2_h3_dphi = std::abs(ROOT::Math::VectorUtil::DeltaPhi(a1_daughters[1],a1_daughters[2]));
+    h1_h2_dEta = std::abs(a1_daughters[0].eta()-a1_daughters[1].eta());
+    h1_h3_dEta = std::abs(a1_daughters[0].eta()-a1_daughters[2].eta());
+    h2_h3_dEta = std::abs(a1_daughters[1].eta()-a1_daughters[2].eta());
   }
 
   float Ea1 = E1+E2+E3;
@@ -431,7 +431,7 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
   float gammas_dR_tau =  sqrt(gammas_dEta*gammas_dEta + gammas_dphi*gammas_dphi)*E;
 
   float Mpi0=-1, Mpi0_TwoHighGammas=-1;
-  Vector gammas_vector;
+  PtEtaPhiELV gammas_vector;
   for (auto g : gammas_) gammas_vector+=g->p4();
   Mpi0 = gammas_vector.M();
   if(gammas_.size()>=2) Mpi0_TwoHighGammas = (gammas_[0]->p4() + gammas_[1]->p4()).M();
