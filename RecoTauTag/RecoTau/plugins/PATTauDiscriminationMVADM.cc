@@ -82,7 +82,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     std::string version_ = "MVADM_2017_v1";
 
     mutable std::vector<float> vars_(24);
-    mutable std::vector<float> vars_dm10_(24);
+    mutable std::vector<float> vars_dm10_(40);
 
     std::vector<TString> var_names_      = { "Egamma1_tau", "Egamma2_tau", "Epi_tau", "rho_dEta_tau", "rho_dphi_tau",
                                              "gammas_dEta_tau", "gammas_dR_tau", "DeltaR2WRTtau_tau", "tau_decay_mode",
@@ -417,15 +417,15 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
   float rho_dEta=-1, rho_dphi=-1, gammas_dEta = -1., gammas_dphi = -1.;
 
   if(Epi0>0) {
-    rho_dphi = std::fabs(ROOT::Math::VectorUtil::DeltaPhi(pi,pi0));
-    rho_dEta = std::fabs(pi.eta()-pi0.eta());
+    rho_dphi = std::abs(ROOT::Math::VectorUtil::DeltaPhi(pi,pi0));
+    rho_dEta = std::abs(pi.eta()-pi0.eta());
   }
   float rho_dEta_tau = rho_dEta*E;
   float rho_dphi_tau = rho_dphi*E;
 
   if(gammas_.size()>1) {
-    gammas_dphi =  std::fabs(ROOT::Math::VectorUtil::DeltaPhi(gammas_[0]->p4(),gammas_[1]->p4()));
-    gammas_dEta =  std::fabs(gammas_[0]->eta()-gammas_[1]->eta());
+    gammas_dphi =  std::abs(ROOT::Math::VectorUtil::DeltaPhi(gammas_[0]->p4(),gammas_[1]->p4()));
+    gammas_dEta =  std::abs(gammas_[0]->eta()-gammas_[1]->eta());
   }
   float gammas_dEta_tau = gammas_dEta* E;
   float gammas_dR_tau =  sqrt(gammas_dEta*gammas_dEta + gammas_dphi*gammas_dphi)*E;
