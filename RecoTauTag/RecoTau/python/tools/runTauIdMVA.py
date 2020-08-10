@@ -9,10 +9,8 @@ class TauIDEmbedder(object):
         "2017v1", "2017v2", "newDM2017v2", "dR0p32017v2", "2016v1", "newDM2016v1",
         "deepTau2017v1", "deepTau2017v2", "deepTau2017v2p1",
         "DPFTau_2016_v0", "DPFTau_2016_v1",
-        "againstEle2018"
+        "againstEle2018", "MVADM_2017_v1"
     ]
-
-    availableDiscriminators+=["MVADM_2017_v1"]
 
     def __init__(self, process, cms, debug = False,
                  updatedTauName = "slimmedTausNewID",

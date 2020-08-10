@@ -79,17 +79,19 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     TMVA::Reader *reader_dm10_even_;
     TMVA::Reader *reader_dm10_odd_;
 
+    const double mass_pi = 0.13498;
+    const double mass_rho = 0.7755;
     std::string version_ = "MVADM_2017_v1";
 
-    mutable std::vector<float> vars_(24);
-    mutable std::vector<float> vars_dm10_(40);
+    mutable std::vector<float> vars_ = std::vector<float>(24);
+    mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
 
-    std::vector<TString> var_names_      = { "Egamma1_tau", "Egamma2_tau", "Epi_tau", "rho_dEta_tau", "rho_dphi_tau",
+    const std::vector<TString> var_names_      = { "Egamma1_tau", "Egamma2_tau", "Epi_tau", "rho_dEta_tau", "rho_dphi_tau",
                                              "gammas_dEta_tau", "gammas_dR_tau", "DeltaR2WRTtau_tau", "tau_decay_mode",
                                              "eta", "pt", "Epi0", "Epi", "rho_dEta", "rho_dphi", "gammas_dEta", "Mrho", 
                                              "Mpi0", "DeltaR2WRTtau", "Mpi0_TwoHighGammas", "Mrho_OneHighGammas",
                                              "Mrho_TwoHighGammas", "Mrho_subleadingGamma", "strip_pt" };
-    std::vector<TString> var_names_dm10_ = { "E1_overEa1", "E2_overEa1", "E1_overEtau", "E2_overEtau", "E3_overEtau",
+    const std::vector<TString> var_names_dm10_ = { "E1_overEa1", "E2_overEa1", "E1_overEtau", "E2_overEtau", "E3_overEtau",
                                              "a1_pi0_dEta_timesEtau", "a1_pi0_dphi_timesEtau", "h1_h2_dphi_timesE12",
                                              "h1_h2_dEta_timesE12", "h1_h3_dphi_timesE13", "h1_h3_dEta_timesE13",
                                              "h2_h3_dphi_timesE23", "h2_h3_dEta_timesE23", "gammas_dEta_timesEtau",
@@ -109,7 +111,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
 
     std::vector<float> read_mva_score(int decay_mode) const {
       std::vector<float> mva_scores = {};
-      if(decay_mode==0 || decay_mode==1) {
+      if(decay_mode==0 || decay_mode==1 || decay_mode==2) {
         if(isEven_) mva_scores = reader_even_->EvaluateMulticlass("BDT method");
         else       mva_scores = reader_odd_->EvaluateMulticlass("BDT method");
       } else if(decay_mode==10 || decay_mode==11) {
@@ -140,8 +142,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           phi = gammas[0]->phi();
         }
   
-        double mass = 0.1349;
-        double p = sqrt(tot_energy*tot_energy-mass*mass);
+        double p = sqrt(tot_energy*tot_energy-mass_pi*mass_pi);
         double theta = atan(exp(-eta))*2;
         double pt = p*sin(theta);
         pi0.SetCoordinates(pt, eta, phi, tot_energy);
@@ -249,9 +250,8 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
         hads[0] = temp;
       } 
       // from the two same sign hadrons place the one that gives the mass most similar to the rho meson as the second element
-      double rho_mass = 0.7755;
-      double dM1 = std::abs((hads[0]->p4()+hads[1]->p4()).M()-rho_mass);
-      double dM2 = std::abs((hads[0]->p4()+hads[2]->p4()).M()-rho_mass);
+      double dM1 = std::abs((hads[0]->p4()+hads[1]->p4()).M()-mass_rho);
+      double dM2 = std::abs((hads[0]->p4()+hads[2]->p4()).M()-mass_rho);
       if(dM2<dM1){
         auto temp = hads[2];
         hads[2] = hads[1];
@@ -283,7 +283,7 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     std::sort(signal_gammas.begin(), signal_gammas.end(), sortByPT<reco::CandidatePtr>);
     gammas_ = signal_gammas;
 
-    for (auto h : hads) prongs.push_back((PtEtaPhiELV)h->p4());
+    for (auto h : hads) prongs.push_back(PtEtaPhiELV(h->p4()));
 
     return std::make_pair(prongs, pi0);
   }
