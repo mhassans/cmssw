@@ -1,8 +1,11 @@
-#include "RecoTauTag/RecoTau/interface/MVADMDiscriminationProducerBase.h"
+#include "RecoTauTag/RecoTau/interface/TauDiscriminationProducerBase.h"
+#include "DataFormats/PatCandidates/interface/PATTauDiscriminator.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector4Dfwd.h"
 #include <Math/VectorUtil.h>
 #include "TMVA/Reader.h"
+
+
 
 /* class PATTauDiscriminationMVADM
  *
@@ -10,6 +13,8 @@
  *  Returns MVA score for each class
  *
  */
+
+using namespace pat;
 
 namespace {
 
@@ -24,10 +29,17 @@ bool sortByPT (T i, T j) {
 }
 
 
-class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducerBase  {
+class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase  {
   public:
     explicit PATTauDiscriminationMVADM(const edm::ParameterSet& iConfig)
-        :PATTauMVADMDiscriminationProducerBase(iConfig){
+        :PATTauDiscriminationProducerBase(iConfig),
+        category_output1_(),
+        category_output2_(),
+        category_output3_(),
+        category_output4_(),
+        category_output5_(),
+        category_output6_()
+        {
           version_ = iConfig.getParameter<std::string>("version");
           TString input_name_dm_10_applytoeven;
           TString input_name_dm_10_applytoodd;
@@ -63,15 +75,26 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
           reader_dm10_even_->BookMVA( "BDT method", input_name_dm_10_applytoeven );
           reader_dm10_odd_->BookMVA( "BDT method", input_name_dm_10_applytoodd );
 
+          // add category index
+          produces<PATTauDiscriminator>("category1");
+          produces<PATTauDiscriminator>("category2");
+          produces<PATTauDiscriminator>("category3");
+          produces<PATTauDiscriminator>("category4");
+          produces<PATTauDiscriminator>("category5");
+          produces<PATTauDiscriminator>("category6");
+
         }
+
     ~PATTauDiscriminationMVADM() override{}
     std::vector<double> read_mva_score(std::vector<float> vars, int decay_mode);
 
     void beginEvent(const edm::Event&, const edm::EventSetup&) override;
-    std::vector<float> discriminate(const TauRef& tau) const override;
-
+    //std::vector<float> discriminate(const TauRef& tau) const override;
+    double discriminate(const TauRef& tau) const override;
+    void endEvent(edm::Event&) override;
 
   private:
+
 
 
     TMVA::Reader *reader_even_;
@@ -288,26 +311,51 @@ class PATTauDiscriminationMVADM final : public PATTauMVADMDiscriminationProducer
     return std::make_pair(prongs, pi0);
   }
 
+    std::unique_ptr<PATTauDiscriminator> category_output1_;
+    std::unique_ptr<PATTauDiscriminator> category_output2_;
+    std::unique_ptr<PATTauDiscriminator> category_output3_;
+    std::unique_ptr<PATTauDiscriminator> category_output4_;
+    std::unique_ptr<PATTauDiscriminator> category_output5_;
+    std::unique_ptr<PATTauDiscriminator> category_output6_;
  
 };
 
 void PATTauDiscriminationMVADM::beginEvent(const edm::Event& evt, const edm::EventSetup& es) {
   isEven_ = evt.id().event() % 2 == 0;
   event_ = evt.id().event();
+  
+  category_output1_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  category_output2_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  category_output3_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  category_output4_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  category_output5_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  category_output6_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  
   evt.getByToken(Tau_token, taus_);
 }
 
 
-std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
+//std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
+double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
+  
+  double category1 = -1;
+  double category2 = -1;
+  double category3 = -1;
+  double category4 = -1;
+  double category5 = -1;
+  double category6 = -1;
+  
   double gammas_pt_cut;
   if (version_=="MVADM_2017_v1") gammas_pt_cut=1.0;
 
   std::vector<float> scores= {};
+  double mva_dm = -1.0;
   gammas_.clear();
   // define all variables used by MVA
   float tau_decay_mode = tau->decayMode();
 
-  if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return scores;
+//  if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return scores;
+  if (tau_decay_mode>11 || (tau_decay_mode>1&&tau_decay_mode<10)) return mva_dm;
 
   PtEtaPhiELV pi0;
   PtEtaPhiELV pi;
@@ -535,9 +583,65 @@ std::vector<float> PATTauDiscriminationMVADM::discriminate(const TauRef& tau) co
 
   scores = read_mva_score((int)tau_decay_mode);
 
-  return scores;
+
+  if(scores.size()<3) {
+    category1 = 0;
+    category2 = 0;
+    category3 = 0;
+    category4 = 0;
+    category5 = 0;
+    category6 = 0;
+    mva_dm = -1;
+  }
+  if(scores.size()==4) {
+    category1 = scores[0];
+    category2 = scores[2];
+    category3 = scores[1];
+    category4 = scores[3];
+    category5 = 0;
+    category6 = 0;
+
+    if     (scores[2]>scores[0]&&scores[2]>scores[1]&&scores[2]>scores[3]) mva_dm = 0;
+    else if(scores[1]>scores[0]&&scores[1]>scores[2]&&scores[1]>scores[3]) mva_dm = 1;
+    else if(scores[3]>scores[0]&&scores[3]>scores[1]&&scores[3]>scores[2]) mva_dm = 2;
+    else mva_dm = -1;
+  }
+  if(scores.size()==3){
+    category1 = scores[0];
+    category2 = 0;
+    category3 = 0;
+    category4 = 0;
+    category5 = scores[1];
+    category6 = scores[2];
+    
+    if     (scores[1]>scores[0] && scores[1]>scores[2]) mva_dm = 10;
+    else if(scores[2]>scores[0] && scores[2]>scores[1]) mva_dm = 11; 
+    else mva_dm = -1;
+  }
+
+    category_output1_->setValue(tauIndex_, category1);
+    category_output2_->setValue(tauIndex_, category2);
+    category_output3_->setValue(tauIndex_, category3);
+    category_output4_->setValue(tauIndex_, category4);
+    category_output5_->setValue(tauIndex_, category5);
+    category_output6_->setValue(tauIndex_, category6);
+
+
+
+  return mva_dm;
 }
 
+
+void PATTauDiscriminationMVADM::endEvent(edm::Event& evt)
+{
+  // add all category indices to event
+  evt.put(std::move(category_output1_), "category1");
+  evt.put(std::move(category_output2_), "category2");
+  evt.put(std::move(category_output3_), "category3");
+  evt.put(std::move(category_output4_), "category4");
+  evt.put(std::move(category_output5_), "category5");
+  evt.put(std::move(category_output6_), "category6");
+}
 
 DEFINE_FWK_MODULE(PATTauDiscriminationMVADM);
 }
