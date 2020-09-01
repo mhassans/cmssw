@@ -76,12 +76,12 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
           reader_dm10_odd_->BookMVA( "BDT method", input_name_dm_10_applytoodd );
 
           // add category index
-          produces<PATTauDiscriminator>("category1");
-          produces<PATTauDiscriminator>("category2");
-          produces<PATTauDiscriminator>("category3");
-          produces<PATTauDiscriminator>("category4");
-          produces<PATTauDiscriminator>("category5");
-          produces<PATTauDiscriminator>("category6");
+          produces<PATTauDiscriminator>("category1"); // (MVA) dm="other" score
+          produces<PATTauDiscriminator>("category2"); // (MVA) dm=0 score
+          produces<PATTauDiscriminator>("category3"); // (MVA) dm=1 score
+          produces<PATTauDiscriminator>("category4"); // (MVA) dm=2 score
+          produces<PATTauDiscriminator>("category5"); // (MVA) dm=10 score
+          produces<PATTauDiscriminator>("category6"); // (MVA) dm=11 score
 
         }
 
@@ -635,12 +635,12 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
 void PATTauDiscriminationMVADM::endEvent(edm::Event& evt)
 {
   // add all category indices to event
-  evt.put(std::move(category_output1_), "category1");
-  evt.put(std::move(category_output2_), "category2");
-  evt.put(std::move(category_output3_), "category3");
-  evt.put(std::move(category_output4_), "category4");
-  evt.put(std::move(category_output5_), "category5");
-  evt.put(std::move(category_output6_), "category6");
+  evt.put(std::move(category_output1_), "category1"); // (MVA) dm="other" score
+  evt.put(std::move(category_output2_), "category2"); // (MVA) dm=0 score
+  evt.put(std::move(category_output3_), "category3"); // (MVA) dm=1 score
+  evt.put(std::move(category_output4_), "category4"); // (MVA) dm=2 score
+  evt.put(std::move(category_output5_), "category5"); // (MVA) dm=10 score
+  evt.put(std::move(category_output6_), "category6"); // (MVA) dm=11 score
 }
 
 DEFINE_FWK_MODULE(PATTauDiscriminationMVADM);
