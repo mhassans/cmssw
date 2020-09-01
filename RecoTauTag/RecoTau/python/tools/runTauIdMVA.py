@@ -1115,15 +1115,23 @@ class TauIDEmbedder(object):
           self.process.patDiscriminationMVADM2017v1 = self.cms.EDProducer("PATTauDiscriminationMVADM",
             PATTauProducer = self.cms.InputTag('slimmedTaus'),
             version = self.cms.string('MVADM_2017_v1'),
+            Prediscriminants = noPrediscriminants,
           )
 
+          #tauIDSources.MVADM2017v1DMotherraw = self.cms.InputTag('patDiscriminationMVADM2017v1','DMother')
+          #tauIDSources.MVADM2017v1DM0raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM0')
+          #tauIDSources.MVADM2017v1DM1raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM1')
+          #tauIDSources.MVADM2017v1DM2raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM2')
+          #tauIDSources.MVADM2017v1DM10raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM10')
+          #tauIDSources.MVADM2017v1DM11raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM11')
+          #tauIDSources.MVADM2017v1 = self.cms.InputTag('patDiscriminationMVADM2017v1')
 
-          tauIDSources.MVADM2017v1DMotherraw = self.cms.InputTag('patDiscriminationMVADM2017v1','DMother')
-          tauIDSources.MVADM2017v1DM0raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM0')
-          tauIDSources.MVADM2017v1DM1raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM1')
-          tauIDSources.MVADM2017v1DM2raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM2')
-          tauIDSources.MVADM2017v1DM10raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM10')
-          tauIDSources.MVADM2017v1DM11raw = self.cms.InputTag('patDiscriminationMVADM2017v1','DM11')
+          tauIDSources.MVADM2017v1DMotherraw = self.cms.InputTag('patDiscriminationMVADM2017v1','category1')
+          tauIDSources.MVADM2017v1DM0raw = self.cms.InputTag('patDiscriminationMVADM2017v1','category2')
+          tauIDSources.MVADM2017v1DM1raw = self.cms.InputTag('patDiscriminationMVADM2017v1','category3')
+          tauIDSources.MVADM2017v1DM2raw = self.cms.InputTag('patDiscriminationMVADM2017v1','category4')
+          tauIDSources.MVADM2017v1DM10raw = self.cms.InputTag('patDiscriminationMVADM2017v1','category5')
+          tauIDSources.MVADM2017v1DM11raw = self.cms.InputTag('patDiscriminationMVADM2017v1','category6')
           tauIDSources.MVADM2017v1 = self.cms.InputTag('patDiscriminationMVADM2017v1')
 
           self.process.patDiscriminationMVADM2017v1Task = self.cms.Task(
