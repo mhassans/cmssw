@@ -324,14 +324,14 @@ void PATTauDiscriminationMVADM::beginEvent(const edm::Event& evt, const edm::Eve
   isEven_ = evt.id().event() % 2 == 0;
   event_ = evt.id().event();
   
+  evt.getByToken(Tau_token, taus_);
+  
   category_output1_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
   category_output2_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
   category_output3_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
   category_output4_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
   category_output5_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
   category_output6_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
-  
-  evt.getByToken(Tau_token, taus_);
 }
 
 
