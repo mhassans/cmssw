@@ -32,13 +32,13 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
 public:
   explicit PATTauDiscriminationMVADM(const edm::ParameterSet& iConfig)
       : PATTauDiscriminationProducerBase(iConfig),
+        version_(iConfig.getParameter<std::string>("version")),
         category_DMother_(),
         category_DM0_(),
         category_DM1_(),
         category_DM2_(),
         category_DM10_(),
         category_DM11_() {
-    version_ = iConfig.getParameter<std::string>("version");
     TString input_name_dm_10_applytoeven;
     TString input_name_dm_10_applytoodd;
     TString input_name_dm_0_1_applytoeven;
@@ -57,7 +57,7 @@ public:
           (std::string)getenv("CMSSW_BASE") +
           "/src/RecoTauTag/RecoTau/TrainingFiles/data/MVADM/mvadm_applytoodd_2017v1_dm0_dm1.xml";
     } else {
-      cms::Exception("MVA DM version not found") << "Requested version of ID does not exist.";
+      cms::Exception("MVA DM version not found") << "Version " << version_ << " does not exist.";
     }
 
     reader_even_ = new TMVA::Reader();
@@ -103,7 +103,7 @@ private:
 
   const double mass_pi = 0.13498;
   const double mass_rho = 0.7755;
-  std::string version_ = "MVADM_2017_v1";
+  static constexpr std::string version_;// = "MVADM_2017_v1"; 
 
   mutable std::vector<float> vars_ = std::vector<float>(24);
   mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
@@ -183,7 +183,7 @@ private:
 
   std::vector<float> read_mva_score(int decay_mode) const {
     std::vector<float> mva_scores = {};
-    if (decay_mode == 0 || decay_mode == 1 || decay_mode == 2) {
+    if (decay_mode == 0 || decay_mode == 1) {
       if (isEven_)
         mva_scores = reader_even_->EvaluateMulticlass("BDT method");
       else

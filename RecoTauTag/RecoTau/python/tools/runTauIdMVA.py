@@ -1097,7 +1097,7 @@ class TauIDEmbedder(object):
 
             _againstElectronTauIDSources = self.cms.PSet(
                 againstElectronMVA6Raw2018 = self.cms.InputTag("patTauDiscriminationByElectronRejectionMVA62018Raw"),
-                againstElectronMVA6DM0018 = self.cms.InputTag("patTauDiscriminationByElectronRejectionMVA62018Raw","category"),
+                againstElectronMVA6category2018 = self.cms.InputTag("patTauDiscriminationByElectronRejectionMVA62018Raw","category"),
                 againstElectronVLooseMVA62018 = self.cms.InputTag("patTauDiscriminationByVLooseElectronRejectionMVA62018"),
                 againstElectronLooseMVA62018 = self.cms.InputTag("patTauDiscriminationByLooseElectronRejectionMVA62018"),
                 againstElectronMediumMVA62018 = self.cms.InputTag("patTauDiscriminationByMediumElectronRejectionMVA62018"),
