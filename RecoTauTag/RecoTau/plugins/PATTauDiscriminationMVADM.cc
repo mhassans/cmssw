@@ -298,7 +298,7 @@ private:
         gammas = strip_pairs[0].second;
       }
     }
-    if (tau->decayMode() == 1 && !strip_pairs.empty())
+    if ((tau->decayMode() == 1 || tau->decayMode() == 2) && !strip_pairs.empty())
       pi0 = getPi0(strip_pairs[0].second, true);
     else {
       pi0 = getPi0(gammas, true);
@@ -410,7 +410,7 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
   double mva_dm = -1.0;
   gammas_.clear();
   // define all variables used by MVA
-  float tau_decay_mode = tau->decayMode();
+  float tau_decay_mode = (tau->decayMode() !=2 ? tau->decayMode() : 1);
 
   if (tau_decay_mode > 11 || (tau_decay_mode > 1 && tau_decay_mode < 10))
     return mva_dm;
