@@ -2,8 +2,9 @@
 #include "DataFormats/PatCandidates/interface/PATTauDiscriminator.h"
 #include "Math/Vector4D.h"
 #include "Math/Vector4Dfwd.h"
-#include <Math/VectorUtil.h>
+#include "Math/VectorUtil.h"
 #include "TMVA/Reader.h"
+#include <memory>
 
 /* class PATTauDiscriminationMVADM
  *
@@ -32,6 +33,10 @@ class PATTauDiscriminationMVADM final : public PATTauDiscriminationProducerBase 
 public:
   explicit PATTauDiscriminationMVADM(const edm::ParameterSet& iConfig)
       : PATTauDiscriminationProducerBase(iConfig),
+        reader_even_(new TMVA::Reader()),
+        reader_odd_(new TMVA::Reader()),
+        reader_dm10_even_(new TMVA::Reader()),
+        reader_dm10_odd_(new TMVA::Reader()),
         version_(iConfig.getParameter<std::string>("version")),
         category_DMother_(),
         category_DM0_(),
@@ -60,11 +65,6 @@ public:
       cms::Exception("MVA DM version not found") << "Version " << version_ << " does not exist.";
     }
 
-    reader_even_ = new TMVA::Reader();
-    reader_odd_ = new TMVA::Reader();
-    reader_dm10_even_ = new TMVA::Reader();
-    reader_dm10_odd_ = new TMVA::Reader();
-
     for (size_t i = 0; i < var_names_.size(); ++i) {
       reader_even_->AddVariable(var_names_[i], &(vars_[i]));
       reader_odd_->AddVariable(var_names_[i], &(vars_[i]));
@@ -81,11 +81,11 @@ public:
 
     // add category index
     produces<PATTauDiscriminator>("DMother");  // (MVA) dm="other" score
-    produces<PATTauDiscriminator>("DM0");  // (MVA) dm=0 score
-    produces<PATTauDiscriminator>("DM1");  // (MVA) dm=1 score
-    produces<PATTauDiscriminator>("DM2");  // (MVA) dm=2 score
-    produces<PATTauDiscriminator>("DM10");  // (MVA) dm=10 score
-    produces<PATTauDiscriminator>("DM11");  // (MVA) dm=11 score
+    produces<PATTauDiscriminator>("DM0");      // (MVA) dm=0 score
+    produces<PATTauDiscriminator>("DM1");      // (MVA) dm=1 score
+    produces<PATTauDiscriminator>("DM2");      // (MVA) dm=2 score
+    produces<PATTauDiscriminator>("DM10");     // (MVA) dm=10 score
+    produces<PATTauDiscriminator>("DM11");     // (MVA) dm=11 score
   }
 
   ~PATTauDiscriminationMVADM() override {}
@@ -103,7 +103,7 @@ private:
 
   const double mass_pi = 0.13498;
   const double mass_rho = 0.7755;
-  static constexpr std::string version_;// = "MVADM_2017_v1"; 
+  const std::string version_;  // "MVADM_2017_v1";
 
   mutable std::vector<float> vars_ = std::vector<float>(24);
   mutable std::vector<float> vars_dm10_ = std::vector<float>(40);
@@ -203,7 +203,7 @@ private:
       double tot_energy = 0.;
       double phi = 0.;
       double eta = 0.;
-      for (auto g : gammas) {
+      for (const auto& g : gammas) {
         tot_energy += g->energy();
         phi += g->energy() * g->phi();
         eta += g->energy() * g->eta();
@@ -276,7 +276,7 @@ private:
     gammas_.clear();
 
     std::vector<reco::CandidatePtr> gammas;
-    for (auto g : tau->signalGammaCands())
+    for (const auto& g : tau->signalGammaCands())
       if (g->pt() > gammas_pt_cut)
         gammas.push_back(g);
     reco::CandidatePtrVector hads = tau->signalChargedHadrCands();
@@ -287,7 +287,7 @@ private:
     double cone_size = std::max(std::min(0.1, 3. / tau->pt()), 0.05);
     std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
     std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strips_incone;
-    for (auto s : strip_pairs) {
+    for (const auto& s : strip_pairs) {
       if (std::abs(ROOT::Math::VectorUtil::DeltaR(s.first, tau->p4())) < cone_size)
         strips_incone.push_back(s);
     }
@@ -312,7 +312,7 @@ private:
     std::vector<PtEtaPhiELV> prongs;
     PtEtaPhiELV pi0;
     std::vector<reco::CandidatePtr> hads;
-    for (auto h : tau->signalChargedHadrCands())
+    for (const auto& h : tau->signalChargedHadrCands())
       hads.push_back(h);
     if (hads.size() == 3) {
       // arrange hadrons so the oppositly charged hadron is contained in the first element
@@ -336,22 +336,23 @@ private:
     }
 
     std::vector<reco::CandidatePtr> gammas_merge;
-    for (auto g : tau->signalGammaCands())
+    for (const auto& g : tau->signalGammaCands())
       if (g->pt() > gammas_pt_cut)
         gammas_merge.push_back(g);
     if (tau->decayMode() != 11) {
-      for (auto g : tau->isolationGammaCands())
+      for (const auto& g : tau->isolationGammaCands())
         if (g->pt() > gammas_pt_cut)
           gammas_merge.push_back(g);
     }
     std::sort(gammas_merge.begin(), gammas_merge.end(), sortByPT<reco::CandidatePtr>);
     std::vector<reco::CandidatePtr> gammas = {};
-    for (auto g : gammas_merge)
+    gammas.reserve(gammas_merge.size());
+    for (const auto& g : gammas_merge)
       gammas.push_back(g);
     double cone_size = std::max(std::min(0.1, 3. / tau->pt()), 0.05);
     std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strip_pairs = HPSGammas(gammas);
     std::vector<std::pair<PtEtaPhiELV, std::vector<reco::CandidatePtr>>> strips_incone;
-    for (auto s : strip_pairs)
+    for (const auto& s : strip_pairs)
       if (std::abs(ROOT::Math::VectorUtil::DeltaR(s.first, tau->p4())) < cone_size)
         strips_incone.push_back(s);
 
@@ -366,7 +367,8 @@ private:
     std::sort(signal_gammas.begin(), signal_gammas.end(), sortByPT<reco::CandidatePtr>);
     gammas_ = signal_gammas;
 
-    for (auto h : hads)
+    prongs.reserve(hads.size());
+    for (const auto& h : hads)
       prongs.push_back(PtEtaPhiELV(h->p4()));
 
     return std::make_pair(prongs, pi0);
@@ -386,12 +388,12 @@ void PATTauDiscriminationMVADM::beginEvent(const edm::Event& evt, const edm::Eve
 
   evt.getByToken(Tau_token, taus_);
 
-  category_DMother_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
-  category_DM0_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
-  category_DM1_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
-  category_DM2_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
-  category_DM10_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
-  category_DM11_.reset(new PATTauDiscriminator(TauRefProd(taus_)));
+  category_DMother_ = std::make_unique<PATTauDiscriminator>(TauRefProd(taus_));
+  category_DM0_ = std::make_unique<PATTauDiscriminator>(TauRefProd(taus_));
+  category_DM1_ = std::make_unique<PATTauDiscriminator>(TauRefProd(taus_));
+  category_DM2_ = std::make_unique<PATTauDiscriminator>(TauRefProd(taus_));
+  category_DM10_ = std::make_unique<PATTauDiscriminator>(TauRefProd(taus_));
+  category_DM11_ = std::make_unique<PATTauDiscriminator>(TauRefProd(taus_));
 }
 
 double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
@@ -410,7 +412,7 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
   double mva_dm = -1.0;
   gammas_.clear();
   // define all variables used by MVA
-  float tau_decay_mode = (tau->decayMode() !=2 ? tau->decayMode() : 1);
+  float tau_decay_mode = (tau->decayMode() != 2 ? tau->decayMode() : 1);
 
   if (tau_decay_mode > 11 || (tau_decay_mode > 1 && tau_decay_mode < 10))
     return mva_dm;
@@ -425,7 +427,7 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
     a1_daughters = a1.first;
     pi0 = a1.second;
   } else {
-    for (auto g : tau->signalGammaCands())
+    for (const auto& g : tau->signalGammaCands())
       if (g->pt() > gammas_pt_cut)
         gammas_.push_back(g);
     rho = getRho(tau, gammas_pt_cut);
@@ -541,7 +543,7 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
 
   float Mpi0 = -1, Mpi0_TwoHighGammas = -1;
   PtEtaPhiELV gammas_vector;
-  for (auto g : gammas_)
+  for (const auto& g : gammas_)
     gammas_vector += g->p4();
   Mpi0 = gammas_vector.M();
   if (gammas_.size() >= 2)
@@ -562,7 +564,7 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
     double SumPt = 0;
     DeltaR2WRTtau = std::pow(ROOT::Math::VectorUtil::DeltaR(pi, tau->p4()), 2) * std::pow(pi.pt(), 2);
     SumPt = std::pow(pi.pt(), 2);
-    for (auto g : gammas_) {
+    for (const auto& g : gammas_) {
       DeltaR2WRTtau += std::pow(ROOT::Math::VectorUtil::DeltaR(g->p4(), tau->p4()), 2) * std::pow(g->pt(), 2);
       SumPt += std::pow(g->pt(), 2);
     }
@@ -700,9 +702,9 @@ double PATTauDiscriminationMVADM::discriminate(const TauRef& tau) const {
 void PATTauDiscriminationMVADM::endEvent(edm::Event& evt) {
   // add all category indices to event
   evt.put(std::move(category_DMother_), "DMother");
-  evt.put(std::move(category_DM0_), "DM0");  
-  evt.put(std::move(category_DM1_), "DM1");  
-  evt.put(std::move(category_DM2_), "DM2");  
+  evt.put(std::move(category_DM0_), "DM0");
+  evt.put(std::move(category_DM1_), "DM1");
+  evt.put(std::move(category_DM2_), "DM2");
   evt.put(std::move(category_DM10_), "DM10");
   evt.put(std::move(category_DM11_), "DM11");
 }
