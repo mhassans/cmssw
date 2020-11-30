@@ -165,10 +165,11 @@ void HGCalConcentratorProcessorSelection::run(const edm::Handle<l1t::HGCalTrigge
 
     // trigger sum
     if (trigSumImpl_) {
-      if (allTrigCellsInTrigSums_) {  // merge the selected and not-selected vectors
-        trigCellVecNotSelected.insert(trigCellVecNotSelected.end(), trigCellVecOutput.begin(), trigCellVecOutput.end());
+      if (allTrigCellsInTrigSums_) {  // using all TCs
+        trigSumImpl_->doSum(module_trigcell.first, module_trigcell.second, trigSumsVecOutput);
+      } else {  // using only unselected TCs
+        trigSumImpl_->doSum(module_trigcell.first, trigCellVecNotSelected, trigSumsVecOutput);
       }
-      trigSumImpl_->doSum(module_trigcell.first, trigCellVecNotSelected, trigSumsVecOutput);
     }
 
     for (const auto& trigCell : trigCellVecOutput) {
