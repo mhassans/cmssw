@@ -4,6 +4,7 @@
 #include "DataFormats/ForwardDetId/interface/HGCalDetId.h"
 #include "DataFormats/Common/interface/AssociationMap.h"
 #include "DataFormats/ForwardDetId/interface/HGCalTriggerDetId.h"
+#include "DataFormats/ForwardDetId/interface/HGCSiliconDetId.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerGeometryBase.h"
 #include "L1Trigger/L1THGCalUtilities/interface/HGCalTriggerNtupleBase.h"
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerTools.h"
@@ -23,19 +24,15 @@ private:
   edm::EDGetToken trigger_sums_token_;
   edm::ESHandle<HGCalTriggerGeometryBase> geometry_;
 
-  static constexpr unsigned kPanelOffset_ = 0;
-  static constexpr unsigned kPanelMask_ = 0x7F;
-  static constexpr unsigned kSectorOffset_ = 7;
-  static constexpr unsigned kSectorMask_ = 0x7;
 
   int ts_n_;
   std::vector<uint32_t> ts_id_;
   std::vector<int> ts_subdet_;
   std::vector<int> ts_side_;
   std::vector<int> ts_layer_;
-  std::vector<int> ts_panel_number_;
-  std::vector<int> ts_panel_sector_;
   std::vector<int> ts_wafer_;
+  std::vector<int> ts_waferu_;
+  std::vector<int> ts_waferv_;
   std::vector<int> ts_wafertype_;
   std::vector<uint32_t> ts_data_;
   std::vector<float> ts_mipPt_;
@@ -73,9 +70,9 @@ void HGCalTriggerNtupleHGCTriggerSums::initialize(TTree& tree,
   tree.Branch(withPrefix("zside"), &ts_side_);
   tree.Branch(withPrefix("layer"), &ts_layer_);
   tree.Branch(withPrefix("wafer"), &ts_wafer_);
+  tree.Branch(withPrefix("waferu"), &ts_waferu_);
+  tree.Branch(withPrefix("waferv"), &ts_waferv_);
   tree.Branch(withPrefix("wafertype"), &ts_wafertype_);
-  tree.Branch(withPrefix("panel_number"), &ts_panel_number_);
-  tree.Branch(withPrefix("panel_sector"), &ts_panel_sector_);
   tree.Branch(withPrefix("data"), &ts_data_);
   tree.Branch(withPrefix("pt"), &ts_pt_);
   tree.Branch(withPrefix("mipPt"), &ts_mipPt_);
@@ -103,41 +100,28 @@ void HGCalTriggerNtupleHGCTriggerSums::fill(const edm::Event& e, const edm::Even
     if (ts_itr->pt() > 0) {
       ts_n_++;
       // hardware data
-      DetId panelId(ts_itr->detId());
-      int panel_sector = -999;
-      int panel_number = -999;
-      if (panelId.det() == DetId::Forward) {
-        HGCalDetId panelIdHGCal(panelId);
-        if (panelId.subdetId() == ForwardSubdetector::HGCHEB) {
-          panel_number = panelIdHGCal.wafer();
-        } else {
-          panel_sector = (panelIdHGCal.wafer() >> kSectorOffset_) & kSectorMask_;
-          panel_number = (panelIdHGCal.wafer() >> kPanelOffset_) & kPanelMask_;
-        }
-      } else if (panelId.det() == DetId::HGCalHSc) {
-        HGCScintillatorDetId panelIdSci(panelId);
-        panel_sector = panelIdSci.iphi();
-        panel_number = panelIdSci.ietaAbs();
-      }
-      ts_panel_number_.emplace_back(panel_number);
-      ts_panel_sector_.emplace_back(panel_sector);
+      DetId tsId(ts_itr->detId());
       ts_id_.emplace_back(ts_itr->detId());
-      ts_side_.emplace_back(triggerTools_.zside(panelId));
-      ts_layer_.emplace_back(triggerTools_.layerWithOffset(panelId));
+      ts_side_.emplace_back(triggerTools_.zside(tsId));
+      ts_layer_.emplace_back(triggerTools_.layerWithOffset(tsId));
       // V9 detids
-      if (panelId.det() == DetId::HGCalTrigger) {
-        HGCalTriggerDetId idv9(panelId);
-        ts_subdet_.emplace_back(idv9.subdet());
+      if (tsId.det() == DetId::HGCalEE || tsId.det() == DetId::HGCalHSi) {
+        HGCSiliconDetId idv9(tsId);
+        ts_subdet_.emplace_back(idv9.det());
+        ts_waferu_.emplace_back(idv9.waferU());
+        ts_waferv_.emplace_back(idv9.waferV());
         ts_wafertype_.emplace_back(idv9.type());
-      } else if (panelId.det() == DetId::HGCalHSc) {
-        HGCScintillatorDetId idv9(panelId);
+      } else if (tsId.det() == DetId::HGCalHSc) {
+        HGCScintillatorDetId idv9(tsId);
         ts_subdet_.emplace_back(idv9.subdet());
+        ts_waferu_.emplace_back(idv9.ietaAbs());
+        ts_waferv_.emplace_back(idv9.iphi());
         ts_wafertype_.emplace_back(idv9.type());
       }
       // V8 detids
       else {
-        HGCalDetId idv8(panelId);
-        ts_subdet_.emplace_back(panelId.subdetId());
+        HGCalDetId idv8(tsId);
+        ts_subdet_.emplace_back(tsId.subdetId());
         ts_wafer_.emplace_back(idv8.wafer());
         ts_wafertype_.emplace_back(idv8.waferType());
       }
@@ -162,9 +146,9 @@ void HGCalTriggerNtupleHGCTriggerSums::clear() {
   ts_side_.clear();
   ts_layer_.clear();
   ts_wafer_.clear();
+  ts_waferu_.clear();
+  ts_waferv_.clear();
   ts_wafertype_.clear();
-  ts_panel_number_.clear();
-  ts_panel_sector_.clear();
   ts_data_.clear();
   ts_mipPt_.clear();
   ts_pt_.clear();
