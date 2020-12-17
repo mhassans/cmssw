@@ -17,22 +17,20 @@
 #include <vector>
 #include <fstream>
 
-
 class FRDStreamSource : public edm::ProducerSourceFromFiles {
-
 public:
   // construction/destruction
-  FRDStreamSource(edm::ParameterSet const& pset,
-                  edm::InputSourceDescription const& desc);
-  ~FRDStreamSource() override {};
+  FRDStreamSource(edm::ParameterSet const& pset, edm::InputSourceDescription const& desc);
+  ~FRDStreamSource() override{};
 
 private:
   // member functions
-  bool setRunAndEventInfo(edm::EventID& id, edm::TimeValue_t& theTime, edm::EventAuxiliary::ExperimentType& eType) override;
+  bool setRunAndEventInfo(edm::EventID& id,
+                          edm::TimeValue_t& theTime,
+                          edm::EventAuxiliary::ExperimentType& eType) override;
   void produce(edm::Event& e) override;
 
   bool openFile(const std::string& fileName);
-
 
 private:
   // member data
@@ -43,7 +41,8 @@ private:
   const bool verifyAdler32_;
   const bool verifyChecksum_;
   const bool useL1EventID_;
-  unsigned int detectedFRDversion_=0;
+  uint16_t detectedFRDversion_ = 0;
+  uint16_t flags_ = 0;
 };
 
-#endif // EventFilter_Utilities_FRDStreamSource_h
+#endif  // EventFilter_Utilities_FRDStreamSource_h

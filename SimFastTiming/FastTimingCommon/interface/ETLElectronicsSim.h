@@ -12,6 +12,10 @@
 #include "DataFormats/FTLDigi/interface/FTLDigiCollections.h"
 #include "SimFastTiming/FastTimingCommon/interface/MTDDigitizerTypes.h"
 
+#include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
+#include "Geometry/MTDGeometryBuilder/interface/MTDGeometry.h"
+#include "Geometry/CommonTopologies/interface/PixelTopology.h"
+
 namespace mtd = mtd_digitizer;
 
 namespace CLHEP {
@@ -19,43 +23,45 @@ namespace CLHEP {
 }
 
 class ETLElectronicsSim {
- public:
+public:
   ETLElectronicsSim(const edm::ParameterSet& pset);
-  
-  void getEvent(const edm::Event& evt) { }
 
-  void getEventSetup(const edm::EventSetup& evt) { }
+  void getEvent(const edm::Event& evt) {}
 
-  void run(const mtd::MTDSimHitDataAccumulator& input,
-	   ETLDigiCollection& output,
-	   CLHEP::HepRandomEngine *hre) const;
+  void getEventSetup(const edm::EventSetup& evt);
 
-  void runTrivialShaper(ETLDataFrame &dataFrame, 
-			const mtd::MTDSimHitData& chargeColl,
-			const mtd::MTDSimHitData& toa,
-			const uint8_t row,
-			const uint8_t column) const;
+  void run(const mtd::MTDSimHitDataAccumulator& input, ETLDigiCollection& output, CLHEP::HepRandomEngine* hre) const;
 
-  void updateOutput(ETLDigiCollection &coll,
-		    const ETLDataFrame& rawDataFrame) const;
+  void runTrivialShaper(ETLDataFrame& dataFrame,
+                        const mtd::MTDSimHitData& chargeColl,
+                        const mtd::MTDSimHitData& toa,
+                        const uint8_t row,
+                        const uint8_t column) const;
+
+  void updateOutput(ETLDigiCollection& coll, const ETLDataFrame& rawDataFrame) const;
 
   static constexpr int dfSIZE = 5;
 
- private:
+private:
+  const MTDGeometry* geom_;
 
-  const bool  debug_;
+  const bool debug_;
   const float bxTime_;
-  const reco::FormulaEvaluator sigmaEta_;
+  const float integratedLum_;
+  const reco::FormulaEvaluator fluence_;
+  const reco::FormulaEvaluator lgadGain_;
+  const reco::FormulaEvaluator timeRes2_;
 
   // adc/tdc bitwidths
-  const uint32_t adcNbits_, tdcNbits_; 
+  const uint32_t adcNbits_, tdcNbits_;
 
   // synthesized adc/tdc information
   const float adcSaturation_MIP_;
   const float adcLSB_MIP_;
+  const uint32_t adcBitSaturation_;
   const float adcThreshold_MIP_;
   const float toaLSB_ns_;
-
+  const uint32_t tdcBitSaturation_;
 };
 
 #endif

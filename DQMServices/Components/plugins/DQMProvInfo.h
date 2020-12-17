@@ -8,45 +8,45 @@
 #include <FWCore/ParameterSet/interface/ParameterSet.h>
 #include <FWCore/ServiceRegistry/interface/Service.h>
 
-#include <DQMServices/Core/interface/DQMEDAnalyzer.h>
+#include <DQMServices/Core/interface/DQMOneEDAnalyzer.h>
 #include <DQMServices/Core/interface/DQMStore.h>
-#include <DQMServices/Core/interface/MonitorElement.h>
 
 #include <DataFormats/Scalers/interface/DcsStatus.h>
 
 #include <DataFormats/TCDS/interface/TCDSRecord.h>
+#include <DataFormats/OnlineMetaData/interface/DCSRecord.h>
 
 #include <string>
 #include <vector>
 
-class DQMProvInfo : public one::DQMEDAnalyzer<edm::one::WatchLuminosityBlocks> {
- public:
+class DQMProvInfo : public DQMOneEDAnalyzer<> {
+public:
   // Constructor
   DQMProvInfo(const edm::ParameterSet& ps);
   // Destructor
   ~DQMProvInfo() override;
 
- protected:
-  void dqmBeginRun(const edm::Run& r, const edm::EventSetup& c) override ;
-  void bookHistograms(DQMStore::IBooker &, edm::Run const &, edm::EventSetup const &) override;
-  void beginLuminosityBlock(const edm::LuminosityBlock& l,
-                            const edm::EventSetup& c) override;
+protected:
+  void dqmBeginRun(const edm::Run& r, const edm::EventSetup& c) override;
+  void bookHistograms(DQMStore::IBooker&, edm::Run const&, edm::EventSetup const&) override;
   void analyze(const edm::Event& e, const edm::EventSetup& c) override;
-  void endLuminosityBlock(const edm::LuminosityBlock& l,
-                          const edm::EventSetup& c) override;
 
- private:
-  void bookHistogramsLhcInfo(DQMStore::IBooker &);
-  void bookHistogramsEventInfo(DQMStore::IBooker &);
-  void bookHistogramsProvInfo(DQMStore::IBooker &);
+private:
+  void bookHistogramsLhcInfo(DQMStore::IBooker&);
+  void bookHistogramsEventInfo(DQMStore::IBooker&);
+  void bookHistogramsProvInfo(DQMStore::IBooker&);
 
   void analyzeLhcInfo(const edm::Event& e);
   void analyzeEventInfo(const edm::Event& e);
   void analyzeProvInfo(const edm::Event& e);
 
-  void endLuminosityBlockLhcInfo(const int currentLSNumber);
-  void endLuminosityBlockEventInfo(const int currentLSNumber);
-  void blankPreviousLumiSections(const int currentLSNumber);
+  void fillDcsBitsFromDCSRecord(const DCSRecord&, bool* dcsBits);
+  void fillDcsBitsFromDcsStatusCollection(const edm::Handle<DcsStatusCollection>&, bool* dcsBits);
+  bool isPhysicsDeclared(bool* dcsBits);
+
+  void blankAllLumiSections();
+  void fillSummaryMapBin(int ls, int bin, double value);
+  void setupLumiSection(int ls);
 
   // To max amount of lumisections we foresee for the plots
   // DQM GUI renderplugins provide scaling to actual amount
@@ -109,27 +109,19 @@ class DQMProvInfo : public one::DQMEDAnalyzer<edm::one::WatchLuminosityBlocks> {
 
   edm::EDGetTokenT<DcsStatusCollection> dcsStatusCollection_;
   edm::EDGetTokenT<TCDSRecord> tcdsrecord_;
+  edm::EDGetTokenT<DCSRecord> dcsRecordToken_;
 
   // MonitorElements for LhcInfo and corresponding variables
   MonitorElement* hBeamMode_;
   int beamMode_;
   MonitorElement* hIntensity1_;
-  int intensity1_;
   MonitorElement* hIntensity2_;
-  int intensity2_;
   MonitorElement* hLhcFill_;
-  int lhcFill_;
   MonitorElement* hMomentum_;
-  int momentum_;
 
   // MonitorElements for EventInfo and corresponding variables
   MonitorElement* reportSummary_;
   MonitorElement* reportSummaryMap_;
-  int previousLSNumber_;
-  bool physicsDeclared_;
-  bool foundFirstPhysicsDeclared_;
-  bool dcsBits_[MAX_DCS_VBINS + 1];
-  bool foundFirstDcsBits_;
 
   // MonitorElements for ProvInfo and corresponding variables
   MonitorElement* versCMSSW_;
@@ -142,7 +134,7 @@ class DQMProvInfo : public one::DQMEDAnalyzer<edm::one::WatchLuminosityBlocks> {
   std::string hltKey_;
   MonitorElement* hostName_;
   MonitorElement* hIsCollisionsRun_;
-  MonitorElement* processId_; // The PID associated with this job
+  MonitorElement* processId_;  // The PID associated with this job
   MonitorElement* workingDir_;
 };
 

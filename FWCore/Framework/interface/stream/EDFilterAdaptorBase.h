@@ -4,7 +4,7 @@
 //
 // Package:     FWCore/Framework
 // Class  :     EDFilterAdaptorBase
-// 
+//
 /**\class edm::stream::EDFilterAdaptorBase EDFilterAdaptorBase.h "FWCore/Framework/interface/stream/EDFilterAdaptorBase.h"
 
  Description: [one line class summary]
@@ -29,7 +29,6 @@
 #include "FWCore/Utilities/interface/RunIndex.h"
 #include "FWCore/Utilities/interface/LuminosityBlockIndex.h"
 
-
 // forward declarations
 
 namespace edm {
@@ -40,49 +39,47 @@ namespace edm {
   class WaitingTaskWithArenaHolder;
 
   namespace maker {
-    template<typename T> class ModuleHolderT;
+    template <typename T>
+    class ModuleHolderT;
   }
 
   namespace stream {
     class EDFilterBase;
-    class EDFilterAdaptorBase : public ProducingModuleAdaptorBase<EDFilterBase>
-    {
-      
+    class EDFilterAdaptorBase : public ProducingModuleAdaptorBase<EDFilterBase> {
     public:
-      template <typename T> friend class edm::maker::ModuleHolderT;
-      template <typename T> friend class edm::WorkerT;
+      template <typename T>
+      friend class edm::maker::ModuleHolderT;
+      template <typename T>
+      friend class edm::WorkerT;
 
       EDFilterAdaptorBase();
-      
+      EDFilterAdaptorBase(const EDFilterAdaptorBase&) = delete;                   // stop default
+      const EDFilterAdaptorBase& operator=(const EDFilterAdaptorBase&) = delete;  // stop default
+
       // ---------- const member functions ---------------------
-      
+
       // ---------- static member functions --------------------
-      
+
       // ---------- member functions ---------------------------
-      
-      std::string workerType() const { return "WorkerT<EDFilterAdaptorBase>";}
+
+      std::string workerType() const { return "WorkerT<EDFilterAdaptorBase>"; }
+
     protected:
       using ProducingModuleAdaptorBase<EDFilterBase>::commit;
 
     private:
-      EDFilterAdaptorBase(const EDFilterAdaptorBase&) =delete; // stop default
-      
-      const EDFilterAdaptorBase& operator=(const EDFilterAdaptorBase&) =delete; // stop default
+      bool doEvent(EventTransitionInfo const&, ActivityRegistry*, ModuleCallingContext const*);
 
-      bool doEvent(EventPrincipal const&, EventSetupImpl const& ,
-                   ActivityRegistry*,
-                   ModuleCallingContext const*);
-
-      void doAcquire(EventPrincipal const&, EventSetupImpl const& ,
+      void doAcquire(EventTransitionInfo const&,
                      ActivityRegistry*,
                      ModuleCallingContext const*,
                      WaitingTaskWithArenaHolder&);
 
       //For now this is a placeholder
-      /*virtual*/ void preActionBeforeRunEventAsync(WaitingTask* iTask, ModuleCallingContext const& iModuleCallingContext, Principal const& iPrincipal) const {}
-
+      /*virtual*/ void preActionBeforeRunEventAsync(WaitingTask*, ModuleCallingContext const&, Principal const&) const {
+      }
     };
-  }
-}
+  }  // namespace stream
+}  // namespace edm
 
 #endif

@@ -5,6 +5,7 @@ from __future__ import print_function
 import shutil
 import glob
 import json
+import yaml
 import sys
 import sys
 import os
@@ -61,16 +62,15 @@ def supress_output( f ):
 
 
 @supress_output
-def deserialize_iovs(db, plugin_name, plot_name, tag, time_type, iovs):
+def deserialize_iovs(db, plugin_name, plot_name, tags, time_type, input_params):
     ''' Deserializes given iovs data and returns plot coordinates '''
     
     output('Starting to deserialize iovs: ', '')
     output('db: ', db)
     output('plugin name: ', plugin_name)
     output('plot name: ', plot_name)
-    output('tag name: ', tag)
+    output('tags: ', tags)
     output('tag time type: ', time_type)
-    output('iovs: ', iovs)
   
     plugin_base = import_module('pluginModule_PayloadInspector')
     output('PI plugin base: ', plugin_base)
@@ -88,14 +88,26 @@ def deserialize_iovs(db, plugin_name, plot_name, tag, time_type, iovs):
         db_name = 'frontier://FrontierPrep/CMS_CONDITIONS'
     else:
         db_name = db
-    output('full DB name: ', db_name)
-    
 
-    success = plot.process(db_name, tag, time_type, int(iovs['start_iov']), int(iovs['end_iov']))
+    output('full DB name: ', db_name)
+
+    if input_params is not None:
+        plot.setInputParamValues( input_params )
+
+    modv = getattr(plugin_base,'ModuleVersion')
+
+    success = False
+    if modv.label == '1.0':
+        if len(tags)==1:
+            success = plot.process(db_name, tags[0][0], time_type, int(tags[0][1]), int(tags[0][2]) )
+        elif len(tags)==2:
+            success = plot.processTwoTags(db_name, tags[0][0], tags[1][0], int(tags[0][1]),int(tags[1][1]) )
+    elif modv.label == '2.0':
+        success = plot.process(db_name, tags)
+
     output('plot processed data successfully: ', success)
     if not success:
         return False
-
 
     result = plot.data()
     output('deserialized data: ', result)
@@ -151,6 +163,7 @@ def discover():
         }
     '''
     plugin_base = import_module('pluginModule_PayloadInspector') 
+    modv = getattr(plugin_base,'ModuleVersion')
     result = {}
     for plugin_name in discover_plugins():
         output(' - plugin name: ', plugin_name)
@@ -169,7 +182,14 @@ def discover():
             output(' - plot type: ', plot_type)
             single_iov = plot_method.isSingleIov()
             output(' - is single iov: ', single_iov)
-            result.setdefault(payload_type, []).append({'plot': plot, 'plugin_name': plugin_name, 'title': plot_title, 'plot_type': plot_type, 'single_iov': single_iov})
+            two_tags = plot_method.isTwoTags()
+            output(' - is Two Tags: ', two_tags)
+            plot_dict = { 'plot': plot, 'plugin_name': plugin_name, 'title': plot_title, 'plot_type': plot_type, 'single_iov': single_iov, 'two_tags': two_tags }
+            #if modv.label == '2.0':
+            #    input_params = plot_method.inputParams()
+            #    output(' - input params: ', len(input_params))
+            #    plot_dict[ 'input_params'] = input_params
+            result.setdefault(payload_type, []).append( plot_dict )
             output('currently discovered info: ', result)
     output('*** final output:', '')
     return json.dumps(result)
@@ -213,15 +233,18 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=description, formatter_class=RawTextHelpFormatter)
     parser.add_argument("-d", "--discover",   help="discovers object types and plots \nfor a given cmssw release", action="store_true")
     parser.add_argument("-i", "--iovs",       help="deserializes given iovs data encoded in base64 and returns plot coordinates also encoded in base64")
+    parser.add_argument("-i2", "--iovstwo",   help="deserializes given iovs data encoded in base64 and returns plot coordinates also encoded in base64")
     parser.add_argument("-o", "--plugin",     help="Payload Inspector plugin name needed for iovs deserialization")
     parser.add_argument("-p", "--plot",       help="plot name needed for iovs deserialization")
     parser.add_argument("-t", "--tag",        help="tag name needed for iovs deserialization")
+    parser.add_argument("-t2", "--tagtwo",    help="tag name needed for iovs deserialization")
     parser.add_argument("-tt", "--time_type", help="tag time type name needed for iovs deserialization")
     parser.add_argument("-b", "--db",         help="db (Prod or Prep) needed for iovs deserialization")
     parser.add_argument("-test", "--test",    help="add this flag if you want to test the deserialization function and want to see a readable output", action="store_true")
     parser.add_argument("-v", "--verbose",    help="verbose mode. Shows more information", action="store_true")
     parser.add_argument("-ip","--image_plot", help="Switch telling the script that this plot type is of type Image", action="store_true")
     parser.add_argument("-s", "--suppress-output", help="Supresses output from so that stdout and stderr can be kept pure for the ssh transmission", action="store_true")
+    parser.add_argument("-is", "--input_params", help="Plot input parameters ( dictionary, JSON serialized into string )" )
 
     # shows help if no arguments are provided
     if len(sys.argv) == 1:
@@ -234,11 +257,19 @@ if __name__ == '__main__':
     if args.discover:
         os.write( 1, discover() )
 
-    # Return a plot if iovs are provided
-    if args.iovs:
+    input_params = None
+    if args.input_params is not None:
+        input_params = yaml.safe_load(args.input_params)
 
-        # Run plugin with arguments
-        result = deserialize_iovs(args.db, args.plugin, args.plot, args.tag, args.time_type, json.loads(args.iovs))
+    tags = []
+    if args.tag:
+        iovDict = yaml.safe_load( args.iovs )
+        tags.append( (args.tag, iovDict['start_iov'], iovDict['end_iov'] ) )
+        if args.tagtwo:
+            iovDict = yaml.safe_load( args.iovstwo )
+            tags.append( (args.tagtwo, iovDict['start_iov'], iovDict['end_iov'] ) )
+
+        result = deserialize_iovs(args.db, args.plugin, args.plot, tags, args.time_type, input_params)            
         
         # If test -> output the result as formatted json
         if args.test:
@@ -251,9 +282,10 @@ if __name__ == '__main__':
             
             try:
                 filename = json.loads( result )['file']
-            except ValueError as e:
+                #print 'File name',filename
+            except ValueError, e:
                 os.write( 2, 'Value error when getting image name: %s\n' % str( e ))
-            except KeyError as e:
+            except KeyError, e:
                 os.write( 2, 'Key error when getting image name: %s\n' % str( e ))
 
             if not filename or not os.path.isfile( filename ):
@@ -262,7 +294,7 @@ if __name__ == '__main__':
             try:
                 with open( filename, 'r' ) as f:
                     shutil.copyfileobj( f, sys.stdout )
-            except IOError as e:
+            except IOError, e:
                 os.write( 2, 'IO error when streaming image: %s' % str( e ))
             finally:
                 os.remove( filename )

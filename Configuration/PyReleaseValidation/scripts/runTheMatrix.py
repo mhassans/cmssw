@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
+import sys, os
 
 from Configuration.PyReleaseValidation.MatrixReader import MatrixReader
 from Configuration.PyReleaseValidation.MatrixRunner import MatrixRunner
@@ -21,6 +21,13 @@ def runSelected(opt):
 
     mrd = MatrixReader(opt)
     mrd.prepare(opt.useInput, opt.refRel, opt.fromScratch)
+
+    # test for wrong input workflows
+    if opt.testList:
+        definedSet = set([dwf.numId for dwf in mrd.workFlows])
+        testSet = set(opt.testList)
+        undefSet = testSet - definedSet
+        if len(undefSet)>0: raise ValueError('Undefined workflows: '+', '.join(map(str,list(undefSet))))
 
     ret = 0
     if opt.show:
@@ -61,11 +68,13 @@ if __name__ == '__main__':
                      136.731, #2016B Photon data
                      136.7611, #2016E JetHT reMINIAOD from 80X legacy
                      136.8311, #2017F JetHT reMINIAOD from 94X reprocessing
-                     136.788, #2017B Photon data
-                     136.85, #2018A Egamma data
+                     136.88811,#2018D JetHT reMINIAOD from UL processing
+                     136.793, #2017C DoubleEG
+                     136.874, #2018C EGamma
                      140.53, #2011 HI data
                      140.56, #2018 HI data
-                     158.0, #2018 HI MC with pp-like reco
+                     158.01, #reMiniAOD of 2018 HI MC with pp-like reco
+                     312.0, #2021/Run3 HI MC Pyquen_ZeemumuJets_pt10 with pp-like reco
                      1306.0, #SingleMu Pt1 UP15
                      1325.7, #test NanoAOD from existing MINI
                      1330, #Run2 MC Zmm
@@ -74,10 +83,12 @@ if __name__ == '__main__':
                      10024.0, #2017 ttbar
                      10224.0, #2017 ttbar PU
                      10824.0, #2018 ttbar
-                     11624.0, #2019 ttbar
-                     20034.0, #2023D17 ttbar (TDR baseline Muon/Barrel)
-                     21234.0, #2023D21 ttbar (Inner Tracker with lower radii than in TDR)
-                     27434.0, #2023D35 to exercise new HGCal + new MTD
+                     11624.911, #2021 DD4hep ttbar
+                     11634.0, #2021 ttbar
+                     12434.0, #2023 ttbar
+                     23234.0, #2026D49 ttbar (HLT TDR baseline w/ HGCal v11)
+                     23434.999, #2026D49 ttbar premixing stage1+stage2, PU50
+                     28234.0, #2026D60 (exercise HF nose)
                      25202.0, #2016 ttbar UP15 PU
                      250202.181, #2018 ttbar stage1 + stage2 premix
                      ],
@@ -117,6 +128,16 @@ if __name__ == '__main__':
                       help='number of threads per process to use in cmsRun.',
                       dest='nThreads',
                       default=1
+                     )
+    parser.add_option('--nStreams',
+                      help='number of streams to use in cmsRun.',
+                      dest='nStreams',
+                      default=0
+                     )
+    parser.add_option('--numberEventsInLuminosityBlock',
+                      help='number of events in a luminosity block',
+                      dest='numberEventsInLuminosityBlock',
+                      default=-1
                      )
 
     parser.add_option('-n','--showMatrix',
@@ -261,10 +282,18 @@ if __name__ == '__main__':
                       default=False,
                       action='store_true')
 
+    parser.add_option('--sites',
+                      help='Run DAS query to get data from a specific site (default is T2_CH_CERN). Set it to empty string to search all sites.',
+                      dest='dasSites',
+                      default='T2_CH_CERN',
+                      action='store')
+
     opt,args = parser.parse_args()
+    os.environ["CMSSW_DAS_QUERY_SITES"]=opt.dasSites
     if opt.IBEos:
-      import os
-      from commands import getstatusoutput as run_cmd
+      try:from commands import getstatusoutput as run_cmd
+      except:from subprocess import getstatusoutput as run_cmd
+
       ibeos_cache = os.path.join(os.getenv("LOCALRT"), "ibeos_cache.txt")
       if not os.path.exists(ibeos_cache):
         err, out = run_cmd("curl -L -s -o %s https://raw.githubusercontent.com/cms-sw/cms-sw.github.io/master/das_queries/ibeos.txt" % ibeos_cache)
@@ -324,6 +353,8 @@ if __name__ == '__main__':
     if opt.fromScratch: opt.fromScratch = opt.fromScratch.split(',')
     if opt.nProcs: opt.nProcs=int(opt.nProcs)
     if opt.nThreads: opt.nThreads=int(opt.nThreads)
+    if opt.nStreams: opt.nStreams=int(opt.nStreams)
+    if (opt.numberEventsInLuminosityBlock): opt.numberEventsInLuminosityBlock=int(opt.numberEventsInLuminosityBlock)
     if (opt.memoryOffset): opt.memoryOffset=int(opt.memoryOffset)
     if (opt.memPerCore): opt.memPerCore=int(opt.memPerCore)
 

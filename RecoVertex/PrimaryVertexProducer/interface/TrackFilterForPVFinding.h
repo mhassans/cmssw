@@ -11,17 +11,15 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include <vector>
 
-class TrackFilterForPVFinding : public TrackFilterForPVFindingBase  {
-
+class TrackFilterForPVFinding : public TrackFilterForPVFindingBase {
 public:
-
   TrackFilterForPVFinding(const edm::ParameterSet& conf);
-  bool operator() (const reco::TransientTrack & tracks)const;
-  std::vector<reco::TransientTrack> select (const std::vector<reco::TransientTrack>& tracks)const override;
+  bool operator()(const reco::TransientTrack& tracks) const;
+  std::vector<reco::TransientTrack> select(const std::vector<reco::TransientTrack>& tracks) const override;
 
 private:
-
   float maxD0Sig_, minPt_, maxEta_;
+  float maxD0Error_, maxDzError_;
   int minSiLayers_, minPxLayers_;
   float maxNormChi2_;
   reco::TrackBase::TrackQuality quality_;

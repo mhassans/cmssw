@@ -184,8 +184,10 @@ fragment = customizeHLTforAll(fragment,"%s")
     else:
       if self.config.type=="Fake":
         prefix = "run1"
-      else:
+      elif self.config.type in ("Fake1","Fake2","2018"):
         prefix = "run2"
+      else:
+        prefix = "run3"
       _gtData = "auto:"+prefix+"_hlt_"+self.config.type
       _gtMc   = "auto:"+prefix+"_mc_" +self.config.type
       self.data += """
@@ -503,7 +505,9 @@ from HLTrigger.Configuration.CustomConfigs import L1REPACK
   def addEras(self):
     if self.config.eras is None:
       return
-    self.data = re.sub(r'process = cms.Process\( *"\w+"', 'from Configuration.StandardSequences.Eras import eras\n\g<0>, '+', '.join('eras.' + era for era in self.config.eras.split(',')), self.data)
+    from Configuration.StandardSequences.Eras import eras
+    erasSplit = self.config.eras.split(',')
+    self.data = re.sub(r'process = cms.Process\( *"\w+"', '\n'.join(eras.pythonCfgLines[era] for era in erasSplit)+'\n\g<0>, '+', '.join(era for era in erasSplit), self.data)
 
   # select specific Eras
   def loadSetupCff(self):
@@ -634,7 +638,6 @@ if 'GlobalTag' in %%(dict)s:
       # instrument the HLT menu with DQMStore and DQMRootOutputModule suitable for running offline
       dqmstore  = "\n# load the DQMStore and DQMRootOutputModule\n"
       dqmstore += self.loadCffCommand('DQMServices.Core.DQMStore_cfi')
-      dqmstore += "%(process)s.DQMStore.enableMultiThread = True\n"
       dqmstore += """
 %(process)s.dqmOutput = cms.OutputModule("DQMRootOutputModule",
     fileName = cms.untracked.string("DQMIO.root")
@@ -752,7 +755,6 @@ if 'GlobalTag' in %%(dict)s:
       self.options['essources'].append( "-es_hardcode" )
       self.options['essources'].append( "-magfield" )
 
-      self.options['esmodules'].append( "-AutoMagneticFieldESProducer" )
       self.options['esmodules'].append( "-SlaveField0" )
       self.options['esmodules'].append( "-SlaveField20" )
       self.options['esmodules'].append( "-SlaveField30" )

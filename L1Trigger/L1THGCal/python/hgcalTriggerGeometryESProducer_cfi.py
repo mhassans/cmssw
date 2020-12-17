@@ -30,5 +30,6 @@ geometry = cms.PSet( TriggerGeometryName = cms.string('HGCalTriggerGeometryHexLa
 
 hgcalTriggerGeometryESProducer = cms.ESProducer(
     'HGCalTriggerGeometryESProducer',
-    TriggerGeometry = geometry
+    TriggerGeometry = geometry,
+    isV9Geometry = cms.bool(True)
 )

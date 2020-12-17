@@ -75,7 +75,10 @@ hbheprereco = cms.EDProducer(
         useM3 = cms.bool(True),
 
         # Use Mahi?
-        useMahi = cms.bool(True)
+        useMahi = cms.bool(True),
+
+        # Apply legacy HB- energy correction?
+        applyLegacyHBMCorrection = cms.bool(True)
     ),
 
     # Reconstruction algorithm configuration data to fetch from DB, if any
@@ -107,4 +110,7 @@ hbheprereco = cms.EDProducer(
 hbheprereco.pulseShapeParametersQIE8.TrianglePeakTS = cms.uint32(10000)
 
 from Configuration.Eras.Modifier_run2_HE_2017_cff import run2_HE_2017
-run2_HE_2017.toModify(hbheprereco, saveEffectivePedestal = cms.bool(True))
+run2_HE_2017.toModify(hbheprereco, saveEffectivePedestal = True)
+
+from Configuration.Eras.Modifier_run3_HB_cff import run3_HB
+run3_HB.toModify(hbheprereco, algorithm = dict(applyLegacyHBMCorrection = False))

@@ -3,7 +3,7 @@
 
 #include "SimGeneral/MixingModule/interface/DigiAccumulatorMixMod.h"
 #include "SimCalorimetry/HGCalSimProducers/interface/HGCDigitizer.h"
-#include "FWCore/Framework/interface/ProducerBase.h"
+#include "FWCore/Framework/interface/ProducesCollector.h"
 
 #include <vector>
 
@@ -14,7 +14,7 @@ namespace edm {
   }
   class ParameterSet;
   class StreamID;
-}
+}  // namespace edm
 
 namespace CLHEP {
   class HepRandomEngine;
@@ -22,7 +22,7 @@ namespace CLHEP {
 
 class HGCDigiProducer : public DigiAccumulatorMixMod {
 public:
-  HGCDigiProducer(edm::ParameterSet const& pset, edm::ProducerBase& mixMod, edm::ConsumesCollector& iC);
+  HGCDigiProducer(edm::ParameterSet const& pset, edm::ProducesCollector, edm::ConsumesCollector& iC);
   HGCDigiProducer(edm::ParameterSet const& pset, edm::ConsumesCollector& iC);
 
   void initializeEvent(edm::Event const&, edm::EventSetup const&) override;
@@ -32,8 +32,10 @@ public:
   void beginRun(edm::Run const&, edm::EventSetup const&) override;
   void endRun(edm::Run const&, edm::EventSetup const&) override;
   ~HGCDigiProducer() override = default;
+
 private:
   //the digitizer
+  bool premixStage1_, premixStage2_;
   HGCDigitizer theDigitizer_;
   CLHEP::HepRandomEngine* randomEngine_ = nullptr;
 };

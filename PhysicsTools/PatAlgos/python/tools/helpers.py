@@ -156,12 +156,13 @@ class GatherAllModulesVisitor(object):
 class CloneSequenceVisitor(object):
     """Visitor that travels within a cms.Sequence, and returns a cloned version of the Sequence.
     All modules and sequences are cloned and a postfix is added"""
-    def __init__(self, process, label, postfix, removePostfix="", noClones = [], addToTask = False):
+    def __init__(self, process, label, postfix, removePostfix="", noClones = [], addToTask = False, verbose = False):
         self._process = process
         self._postfix = postfix
         self._removePostfix = removePostfix
         self._noClones = noClones
         self._addToTask = addToTask
+        self._verbose = verbose
         self._moduleLabels = []
         self._clonedSequence = cms.Sequence()
         setattr(process, self._newLabel(label), self._clonedSequence)
@@ -189,7 +190,7 @@ class CloneSequenceVisitor(object):
 
     def clonedSequence(self):
         for label in self._moduleLabels:
-            massSearchReplaceAnyInputTag(self._clonedSequence, label, self._newLabel(label), moduleLabelOnly=True, verbose=False)
+            massSearchReplaceAnyInputTag(self._clonedSequence, label, self._newLabel(label), moduleLabelOnly=True, verbose=self._verbose)
         self._moduleLabels = [] # prevent the InputTag replacement next time the 'clonedSequence' function is called.
         return self._clonedSequence
 
@@ -254,7 +255,7 @@ def contains(sequence, moduleName):
 
 
 
-def cloneProcessingSnippet(process, sequence, postfix, removePostfix="", noClones = [], addToTask = False):
+def cloneProcessingSnippet(process, sequence, postfix, removePostfix="", noClones = [], addToTask = False, verbose = False):
     """
     ------------------------------------------------------------------
     copy a sequence plus the modules and sequences therein
@@ -264,7 +265,7 @@ def cloneProcessingSnippet(process, sequence, postfix, removePostfix="", noClone
     """
     result = sequence
     if not postfix == "":
-        visitor = CloneSequenceVisitor(process, sequence.label(), postfix, removePostfix, noClones, addToTask)
+        visitor = CloneSequenceVisitor(process, sequence.label(), postfix, removePostfix, noClones, addToTask, verbose)
         sequence.visit(visitor)
         result = visitor.clonedSequence()
     return result
@@ -364,6 +365,21 @@ def addKeepStatement(process, oldKeep, newKeeps, verbose=False):
 
 if __name__=="__main__":
     import unittest
+    def _lineDiff(newString, oldString):
+        newString = ( x for x in newString.split('\n') if len(x) > 0)
+        oldString = [ x for x in oldString.split('\n') if len(x) > 0]
+        diff = []
+        oldStringLine = 0
+        for l in newString:
+            if oldStringLine >= len(oldString):
+                diff.append(l)
+                continue
+            if l == oldString[oldStringLine]:
+                oldStringLine +=1
+                continue
+            diff.append(l)
+        return "\n".join( diff )
+
     class TestModuleCommand(unittest.TestCase):
         def setUp(self):
             """Nothing to do """
@@ -375,51 +391,28 @@ if __name__=="__main__":
             p.c = cms.EDProducer("c", src=cms.InputTag("b","instance"))
             p.s = cms.Sequence(p.a*p.b*p.c *p.a)
             cloneProcessingSnippet(p, p.s, "New", addToTask = True)
-            self.assertEqual(p.dumpPython(),
- """import FWCore.ParameterSet.Config as cms
-
-process = cms.Process("test")
-
-process.a = cms.EDProducer("a",
+            self.assertEqual(_lineDiff(p.dumpPython(), cms.Process("test").dumpPython()),
+ """process.a = cms.EDProducer("a",
     src = cms.InputTag("gen")
 )
-
-
 process.aNew = cms.EDProducer("a",
     src = cms.InputTag("gen")
 )
-
-
 process.b = cms.EDProducer("b",
     src = cms.InputTag("a")
 )
-
-
 process.bNew = cms.EDProducer("b",
     src = cms.InputTag("aNew")
 )
-
-
 process.c = cms.EDProducer("c",
     src = cms.InputTag("b","instance")
 )
-
-
 process.cNew = cms.EDProducer("c",
     src = cms.InputTag("bNew","instance")
 )
-
-
 process.patAlgosToolsTask = cms.Task(process.aNew, process.bNew, process.cNew)
-
-
 process.s = cms.Sequence(process.a+process.b+process.c+process.a)
-
-
-process.sNew = cms.Sequence(process.aNew+process.bNew+process.cNew+process.aNew)
-
-
-""")
+process.sNew = cms.Sequence(process.aNew+process.bNew+process.cNew+process.aNew)""")
         def testContains(self):
             p = cms.Process("test")
             p.a = cms.EDProducer("a", src=cms.InputTag("gen"))

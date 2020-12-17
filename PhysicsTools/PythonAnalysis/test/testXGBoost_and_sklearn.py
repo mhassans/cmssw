@@ -5,9 +5,9 @@ from __future__ import print_function
 import numpy as np
 import xgboost as xgb
 from sklearn import datasets
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.datasets import dump_svmlight_file
-from sklearn.externals import joblib
+import joblib
 from sklearn.metrics import precision_score
 
 iris = datasets.load_iris()

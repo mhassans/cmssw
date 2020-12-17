@@ -1,6 +1,6 @@
 #ifndef HECTOR_TRANSPORT
 #define HECTOR_TRANSPORT
-#include "SimTransport/PPSProtonTransport/interface/ProtonTransport.h"
+#include "SimTransport/PPSProtonTransport/interface/BaseProtonTransport.h"
 
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -16,7 +16,6 @@
 #include <iomanip>
 #include <cstdlib>
 
-
 // HepMC headers
 #include "HepMC/GenEvent.h"
 #include "HepMC/GenVertex.h"
@@ -26,61 +25,39 @@
 // user include files
 #include <string>
 
-namespace CLHEP
-{
-    class HepRandomEngine;
+namespace CLHEP {
+  class HepRandomEngine;
 }
 
 class H_BeamParticle;
 class H_BeamLine;
 
-class HectorTransport: public ProtonTransport {
-      public:
+class HectorTransport : public BaseProtonTransport {
+public:
+  HectorTransport(const edm::ParameterSet& ps);
+  ~HectorTransport() override;
 
-            HectorTransport();
-            HectorTransport(const edm::ParameterSet & ps, bool verbosity);
-            ~HectorTransport() override;
-            void process( const HepMC::GenEvent * , const edm::EventSetup & , CLHEP::HepRandomEngine *) override;
+  void process(const HepMC::GenEvent* ev, const edm::EventSetup& es, CLHEP::HepRandomEngine* engine) override;
 
+private:
+  bool m_verbosity;
+  bool produceHitsRelativeToBeam_;
 
-      private:
-            //!propagate the particles through a beamline to PPS
-            bool  transportProton(const HepMC::GenParticle*);
-            /*!Adds the stable protons from the event \a ev to a beamline*/
+  static constexpr double fPPSBeamLineLength_ = 250.;  // default beam line length
 
-              //!Clears BeamParticle, prepares PPSHector for a next Aperture check or/and a next event
-              void genProtonsLoop( const HepMC::GenEvent *  , const edm::EventSetup &);
+  //!propagate the particles through a beamline to PPS
+  bool transportProton(const HepMC::GenParticle*);
 
-              // New function to calculate the LorentzBoost 
-              void setBeamEnergy(double e) {fBeamEnergy=e;fBeamMomentum = sqrt(fBeamEnergy*fBeamEnergy - ProtonMassSQ);}
+  // New function to calculate the LorentzBoost
 
-              double getBeamEnergy() {return fBeamEnergy;}
+  bool setBeamLine();
+  // Defaults
 
-              double getBeamMomentum() {return fBeamMomentum;}
+  double m_fEtacut;
+  double m_fMomentumMin;
 
-              bool setBeamLine();
-/*
- *
- *                        ATTENTION:  DATA MEMBERS AND FUNCTIONS COMMON TO BOTH METHODS SHOULD BE MOVED TO THE BASE CLASS
- *
- */  
-              // Defaults
-            edm::ESHandle < ParticleDataTable > m_pdt;
-
-            double m_fEtacut;
-            double m_fMomentumMin;
-
-            double m_lengthctpps ;
-            double m_f_ctpps_f;
-            double m_b_ctpps_b;
-
-
-              // PPSHector
-              std::unique_ptr<H_BeamLine> m_beamline45;
-              std::unique_ptr<H_BeamLine> m_beamline56;
-
-              std::string m_beam1filename;
-              std::string m_beam2filename;
-
+  // PPSHector
+  std::unique_ptr<H_BeamLine> m_beamline45;
+  std::unique_ptr<H_BeamLine> m_beamline56;
 };
 #endif

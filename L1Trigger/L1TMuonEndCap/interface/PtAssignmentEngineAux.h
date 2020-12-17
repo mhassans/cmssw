@@ -1,12 +1,14 @@
 #ifndef L1TMuonEndCap_PtAssignmentEngineAux_h
 #define L1TMuonEndCap_PtAssignmentEngineAux_h
 
-#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <cmath>
 #include <vector>
 
+#include "L1Trigger/L1TMuonEndCap/interface/Common.h"
+
+// This class (and its daughters) should never own any data members. It should have only functions.
 
 class PtAssignmentEngineAux {
 public:
@@ -22,8 +24,7 @@ public:
 
   int getGMTQuality(int mode, int theta, bool promoteMode7, int version) const;
 
-  std::pair<int,int> getGMTCharge(int mode, const std::vector<int>& phidiffs) const;
-
+  std::pair<int, int> getGMTCharge(int mode, const std::vector<int>& phidiffs) const;
 };
 
 #endif

@@ -3,7 +3,6 @@
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/Utilities/interface/Exception.h"
-#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
 #include "CommonTools/ConditionDBWriter/interface/ConditionDBWriter.h"
@@ -15,15 +14,11 @@
 #include <ext/hash_map>
 
 class SiStripBadModuleByHandBuilder : public ConditionDBWriter<SiStripBadStrip> {
-
 public:
-
   explicit SiStripBadModuleByHandBuilder(const edm::ParameterSet&);
   ~SiStripBadModuleByHandBuilder() override;
 
-
 private:
-
   std::unique_ptr<SiStripBadStrip> getNewObject() override;
 
 private:
@@ -31,6 +26,5 @@ private:
   bool printdebug_;
   std::vector<uint32_t> BadModuleList_;
   SiStripDetInfoFileReader* reader;
-
 };
 #endif

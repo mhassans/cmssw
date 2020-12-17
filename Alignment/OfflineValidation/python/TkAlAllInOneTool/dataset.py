@@ -3,6 +3,7 @@ from __future__ import absolute_import
 # idea stolen from:
 # http://cmssw.cvs.cern.ch/cgi-bin/cmssw.cgi/CMSSW/
 #        PhysicsTools/PatAlgos/python/tools/cmsswVersionTools.py
+from builtins import range
 import bisect
 import datetime
 import json
@@ -88,7 +89,7 @@ class Dataset(object):
     def __chunks( self, theList, n ):
         """ Yield successive n-sized chunks from theList.
         """
-        for i in xrange( 0, len( theList ), n ):
+        for i in range( 0, len( theList ), n ):
             yield theList[i:i+n]
 
     __source_template= ("%(header)s"
@@ -106,7 +107,7 @@ class Dataset(object):
                         "%(files)s\n"
                         "%(lumiSecExtend)s\n"
                         "%(process)smaxEvents = cms.untracked.PSet( "
-                        "input = cms.untracked.int32(%(nEvents)s) )\n"
+                        "input = cms.untracked.int32(int(%(nEvents)s)) )\n"
                         "%(skipEventsString)s\n")
 
     __dummy_source_template = ("readFiles = cms.untracked.vstring()\n"
@@ -118,7 +119,7 @@ class Dataset(object):
                                ")\n"
                                "readFiles.extend(['dummy_File.root'])\n"
                                "%(process)smaxEvents = cms.untracked.PSet( "
-                               "input = cms.untracked.int32(%(nEvents)s) )\n"
+                               "input = cms.untracked.int32(int(%(nEvents)s)) )\n"
                                "%(skipEventsString)s\n")
 
     def __lumiSelectionSnippet( self, jsonPath = None, firstRun = None, lastRun = None ):
@@ -754,7 +755,7 @@ class Dataset(object):
                        "process.maxEvents = cms.untracked.PSet(\n"
                        "    input = cms.untracked.int32(.oO[nEvents]Oo. / .oO[parallelJobs]Oo.)\n"
                        ")\n"
-                       "process.source.skipEvents=cms.untracked.uint32(.oO[nIndex]Oo.*.oO[nEvents]Oo./.oO[parallelJobs]Oo.)"
+                       "process.source.skipEvents=cms.untracked.uint32(int(.oO[nIndex]Oo.*.oO[nEvents]Oo./.oO[parallelJobs]Oo.))"
                        %(self.__name))
             if not parent:
                 with open(self.__filename) as f:
@@ -764,7 +765,7 @@ class Dataset(object):
         theMap = { "process": "process.",
                    "tab": " " * len( "process." ),
                    "nEvents": ".oO[nEvents]Oo. / .oO[parallelJobs]Oo.",
-                   "skipEventsString": "process.source.skipEvents=cms.untracked.uint32(.oO[nIndex]Oo.*.oO[nEvents]Oo./.oO[parallelJobs]Oo.)\n",
+                   "skipEventsString": "process.source.skipEvents=cms.untracked.uint32(int(.oO[nIndex]Oo.*.oO[nEvents]Oo./.oO[parallelJobs]Oo.))\n",
                    "importCms": "",
                    "header": ""
                    }

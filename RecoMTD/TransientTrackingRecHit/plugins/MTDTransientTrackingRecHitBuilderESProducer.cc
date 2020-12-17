@@ -10,17 +10,16 @@
 #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
 #include "TrackingTools/Records/interface/TransientRecHitRecord.h"
 
-#include<memory>
+#include <memory>
 
 #include "TrackingTools/TransientTrackingRecHit/interface/TransientTrackingRecHitBuilder.h"
 
 #include "FWCore/Framework/interface/ESProducer.h"
-
-namespace edm {class ParameterSet;}
+#include "FWCore/Utilities/interface/ESGetToken.h"
 
 class TransientRecHitRecord;
 
-class MTDTransientTrackingRecHitBuilderESProducer: public edm::ESProducer {
+class MTDTransientTrackingRecHitBuilderESProducer : public edm::ESProducer {
 public:
   /// Constructor
   MTDTransientTrackingRecHitBuilderESProducer(const edm::ParameterSet&);
@@ -31,29 +30,22 @@ public:
   // Operations
   std::unique_ptr<TransientTrackingRecHitBuilder> produce(const TransientRecHitRecord&);
 
-protected:
-
 private:
+  const edm::ESGetToken<GlobalTrackingGeometry, GlobalTrackingGeometryRecord> geomToken_;
 };
 
 using namespace edm;
 using namespace std;
-    
-MTDTransientTrackingRecHitBuilderESProducer::MTDTransientTrackingRecHitBuilderESProducer(const ParameterSet & parameterSet) {
 
-  setWhatProduced(this,parameterSet.getParameter<string>("ComponentName"));
-}
-    
-std::unique_ptr<TransientTrackingRecHitBuilder> 
-MTDTransientTrackingRecHitBuilderESProducer::produce(const TransientRecHitRecord& iRecord){ 
-  
+MTDTransientTrackingRecHitBuilderESProducer::MTDTransientTrackingRecHitBuilderESProducer(
+    const ParameterSet& parameterSet)
+    : geomToken_(setWhatProduced(this, parameterSet.getParameter<string>("ComponentName")).consumes()) {}
 
-  ESHandle<GlobalTrackingGeometry> trackingGeometry;
-  iRecord.getRecord<GlobalTrackingGeometryRecord>().get(trackingGeometry);
-  
-  return std::make_unique<MTDTransientTrackingRecHitBuilder>(trackingGeometry);
+std::unique_ptr<TransientTrackingRecHitBuilder> MTDTransientTrackingRecHitBuilderESProducer::produce(
+    const TransientRecHitRecord& iRecord) {
+  return std::make_unique<MTDTransientTrackingRecHitBuilder>(iRecord.getHandle(geomToken_));
 }
-    
+
 #include "FWCore/Framework/interface/ModuleFactory.h"
 #include "FWCore/Utilities/interface/typelookup.h"
 

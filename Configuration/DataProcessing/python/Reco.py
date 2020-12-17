@@ -57,6 +57,8 @@ class Reco(Scenario):
         options = Options()
         options.__dict__.update(defaultOptions.__dict__)
         options.scenario = self.cbSc
+        if ('nThreads' in args) :
+            options.nThreads=args['nThreads']
 
         miniAODStep=''
 
@@ -66,11 +68,6 @@ class Reco(Scenario):
                 if a['dataTier'] == 'MINIAOD':
                     miniAODStep=',PAT' 
 
-        """
-        Unscheduled for all
-        """
-        options.runUnscheduled=True
-                    
         self._checkRepackedFlag(options, **args)
 
         if 'customs' in args:
@@ -117,6 +114,8 @@ class Reco(Scenario):
         options = Options()
         options.__dict__.update(defaultOptions.__dict__)
         options.scenario = self.cbSc
+        if ('nThreads' in args) :
+            options.nThreads=args['nThreads']
 
         eiStep=''
         if self.addEI:

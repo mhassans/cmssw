@@ -5,21 +5,16 @@ from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer
 OuterTrackerMonitorTrackingParticles = DQMEDAnalyzer('OuterTrackerMonitorTrackingParticles',
     TopFolderName = cms.string('SiOuterTrackerV'),
     trackingParticleToken = cms.InputTag("mix","MergedTrackTruth"), #tracking particles
-    StubInputTag = cms.InputTag("TTStubsFromPhase2TrackerDigis","StubAccepted"), #stubs
-    TTTracksTag       = cms.InputTag("TTTracksFromTracklet", "Level1TTTracks"), #tracks (currently from tracklet)
     MCTruthStubInputTag = cms.InputTag("TTStubAssociatorFromPixelDigis", "StubAccepted"), #truth stub associator
     MCTruthTrackInputTag = cms.InputTag("TTTrackAssociatorFromPixelDigis", "Level1TTTracks"), #truth track associator
     MCTruthClusterInputTag = cms.InputTag("TTClusterAssociatorFromPixelDigis", "ClusterAccepted"), #truth cluster associator
-    L1Tk_nPar = cms.int32(4),           # use 4 or 5-parameter L1 track fit ??
     L1Tk_minNStub = cms.int32(4),       # L1 tracks with >= 4 stubs
-    L1Tk_maxChi2 = cms.double(400.0),   # L1 tracks with Chi2 <= X
-    L1Tk_maxChi2dof = cms.double(100.0),# L1 tracks with Chi2 <= X
+    L1Tk_maxChi2dof = cms.double(25.0),# L1 tracks with Chi2 <= X
     TP_minNStub = cms.int32(4),      # require TP to have >= X number of stubs associated with it
+    TP_minNLayersStub = cms.int32(4),   # require TP to have >= X number of layers hit with stubs
     TP_minPt = cms.double(2.0),      # only save TPs with pt > X GeV
-    TP_maxPt = cms.double(1000.0),   # only save TPs with pt < X GeV
     TP_maxEta = cms.double(2.4),     # only save TPs with |eta| < X
-    TP_maxVtxZ = cms.double(30.0),     # only save TPs with |z0| < X cm
-    TP_select_eventid = cms.int32(0),# if zero, only look at TPs from primary interaction, else, include TPs from pileup
+    TP_maxVtxZ = cms.double(15.0),     # only save TPs with |z0| < X cm
 
 # tracking particles vs eta
     TH1TrackParts_Eta = cms.PSet(
@@ -39,20 +34,6 @@ OuterTrackerMonitorTrackingParticles = DQMEDAnalyzer('OuterTrackerMonitorTrackin
     TH1TrackParts_Pt = cms.PSet(
         Nbinsx = cms.int32(45),
         xmax = cms.double(100),
-        xmin = cms.double(0)
-        ),
-
-#Chi2 of the track
-    TH1_Track_Chi2 = cms.PSet(
-        Nbinsx = cms.int32(100),
-        xmax = cms.double(50),
-        xmin = cms.double(0)
-        ),
-
-#Chi2R of the track
-    TH1_Track_Chi2R = cms.PSet(
-        Nbinsx = cms.int32(100),
-        xmax = cms.double(10),
         xmin = cms.double(0)
         ),
 

@@ -7,6 +7,8 @@ import FWCore.ParameterSet.Config as cms
 from FWCore.ParameterSet.VarParsing import VarParsing
 import sys, re
 
+from FWCore.PythonFramework.CmsRun import CmsRun
+
 process = cms.Process("PROD")
 
 process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
@@ -76,9 +78,19 @@ process.source = cms.Source("PoolSource",
 )
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(200)
+    input = cms.untracked.int32(-1)
 )
+'''
+process.Timing = cms.Service("Timing")
 
+process.SimpleMemoryCheck = cms.Service("SimpleMemoryCheck",
+  ignoreTotal          = cms.untracked.int32(1),
+  oncePerEventMode     = cms.untracked.bool(True),
+  moduleMemorySummary  = cms.untracked.bool(True),
+  showMallocInfo       = cms.untracked.bool(True),
+  monitorPssAndPrivate = cms.untracked.bool(True),
+)
+'''
 process.p1 = cms.Path(process.g4SimHits)
 process.g4SimHits.StackingAction.TrackNeutrino = cms.bool(True)
 process.g4SimHits.UseMagneticField = False
@@ -95,7 +107,35 @@ process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
         TreeFile = cms.string('None'), ## is NOT requested
 
         StopAfterProcess = cms.string('None'),
-#        TextFile = cms.string("matbdg_HGCal.txt")
-        TextFile = cms.string('None')
-    )
+        #        TextFile = cms.string("matbdg_HGCal.txt")
+        TextFile = cms.string('None'), 
+        #Setting ranges for histos
+        #Make z 1mm per bin. Be careful this could lead to memory crashes if too low. 
+        minZ = cms.double(-5500.),
+        maxZ = cms.double(5500.),
+        nintZ = cms.int32(11000), 
+        # Make r 1cm per bin
+        rMin = cms.double(-50.), 
+        rMax = cms.double(3400.),
+        nrbin = cms.int32(345),
+        # eta
+        etaMin = cms.double(-5.), 
+        etaMax = cms.double(5.),
+        netabin = cms.int32(250),
+        # phi
+        phiMin = cms.double(-3.2), 
+        phiMax = cms.double(3.2),
+        nphibin = cms.int32(180),
+        # R for profile histos
+        RMin =  cms.double(0.), 
+        RMax =  cms.double(3000.), 
+        nRbin = cms.int32(300)
+
+     )
 ))
+
+
+cmsRun = CmsRun(process)
+cmsRun.run()
+
+

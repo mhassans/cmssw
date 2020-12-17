@@ -3,12 +3,13 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("PROD")
 process.load("SimGeneral.HepPDTESSource.pdt_cfi")
 
-process.load("Configuration.Geometry.GeometryExtended2023D17Reco_cff")
-process.load("Configuration.Geometry.GeometryExtended2023D17_cff")
+process.load("Configuration.Geometry.GeometryExtended2026D49Reco_cff")
+#process.load("Configuration.Geometry.GeometryExtended2026D67Reco_cff")
+#process.load("Configuration.Geometry.GeometryExtended2026D71Reco_cff")
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
 if hasattr(process,'MessageLogger'):
-    process.MessageLogger.categories.append('HGCalGeom')
+    process.MessageLogger.HGCalGeom=dict()
 
 process.load("IOMC.RandomEngine.IOMC_cff")
 process.RandomNumberGeneratorService.generator.initialSeed = 456789
@@ -36,6 +37,7 @@ process.maxEvents = cms.untracked.PSet(
 
 process.prodTest = cms.EDAnalyzer("HGCalTestRecHitTool",
                                   Mode = cms.int32(0),
+#                                 Mode = cms.int32(1),
                                   )
 
 process.p1 = cms.Path(process.generator*process.prodTest)

@@ -1,5 +1,6 @@
 from __future__ import print_function
-from FWCore.GuiBrowsers.ConfigToolBase import *
+from builtins import range
+from PhysicsTools.PatAlgos.tools.ConfigToolBase import *
 
 from PhysicsTools.PatAlgos.tools.helpers import *
 
@@ -70,8 +71,8 @@ class RemoveMCMatching(ConfigToolBase):
     def __init__(self):
         ConfigToolBase.__init__(self)
         self.addParameter(self._defaultParameters,'names',['All'], 
-                          "collection name; supported are 'Photons', 'OOTPhotons', 'Electrons', 'LowPtElectrons', 'Muons', 'Taus', 'TausBoosted', 'Jets', 'METs', 'All', 'PFAll', 'PFElectrons','PFTaus','PFMuons'", 
-                          allowedValues=['Photons', 'OOTPhotons' ,'Electrons', 'LowPtElectrons', 'Muons', 'Taus', 'TausBoosted', 'Jets', 'METs', 'All', 'PFAll', 'PFElectrons','PFTaus','PFMuons'])
+                          "collection name; supported are 'Photons', 'OOTPhotons', 'Electrons', 'LowPtElectrons', 'Muons', 'Taus', 'TausBoosted', 'Jets', 'JetsAK8', 'METs', 'All', 'PFAll', 'PFElectrons','PFTaus','PFMuons'", 
+                          allowedValues=['Photons', 'OOTPhotons' ,'Electrons', 'LowPtElectrons', 'Muons', 'Taus', 'TausBoosted', 'Jets', 'JetsAK8', 'METs', 'All', 'PFAll', 'PFElectrons','PFTaus','PFMuons'])
         self.addParameter(self._defaultParameters,'postfix',"", "postfix of default sequence")
         self.addParameter(self._defaultParameters,'outputModules',['out'], "names of all output modules specified to be adapted (default is ['out'])")
         self._parameters=copy.deepcopy(self._defaultParameters)
@@ -175,6 +176,10 @@ class RemoveMCMatching(ConfigToolBase):
                         getattr(process,outMod).outputCommands.append("drop recoGenJets_*_*_*")
                     else:
                         raise KeyError("process has no OutModule named " + outMod)
+            
+            if ( names[obj] == 'JetsAK8' or names[obj] == 'All' ):
+                print("removing MC dependencies for AK8 jets")
+                attrsToDelete += ['slimmedGenJetsAK8' + postfix]
 
             if( names[obj] == 'METs'      or names[obj] == 'All' ):
                 for mod in process.producerNames().split():

@@ -43,10 +43,15 @@ from Configuration.ProcessModifiers.run2_HECollapse_2018_cff import run2_HEColla
     ),
 )
 
-# offline 2019
+# offline 2021
 from Configuration.Eras.Modifier_run3_HB_cff import run3_HB
 run3_HB.toModify(particleFlowClusterHCAL,
     pfClusterBuilder = dict(
         allCellsPositionCalc = dict(logWeightDenominatorByDetector = {0 : dict(logWeightDenominator = _thresholdsHBphase1) } ),
     ),
+)
+
+# HCALonly WF
+particleFlowClusterHCALOnly = particleFlowClusterHCAL.clone(
+    clustersSource = "particleFlowClusterHBHEOnly"
 )

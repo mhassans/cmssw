@@ -1,5 +1,4 @@
 from Configuration.Eras.Modifier_run2_miniAOD_80XLegacy_cff import run2_miniAOD_80XLegacy
-from Configuration.Eras.Modifier_run2_nanoAOD_92X_cff import run2_nanoAOD_92X
 
 
 import FWCore.ParameterSet.Config as cms
@@ -23,7 +22,7 @@ matchGenCHadron = matchGenCHadron.clone(
 )
 
 ## Producer for ttbar categorisation ID
-from TopQuarkAnalysis.TopTools.GenTtbarCategorizer_cfi import categorizeGenTtbar
+from TopQuarkAnalysis.TopTools.categorizeGenTtbar_cfi import categorizeGenTtbar
 categorizeGenTtbar = categorizeGenTtbar.clone(
     genJetPtMin = 20.,
     genJetAbsEtaMax = 2.4,
@@ -33,10 +32,8 @@ categorizeGenTtbar = categorizeGenTtbar.clone(
 
 ### Era dependent customization
 run2_miniAOD_80XLegacy.toModify( matchGenBHadron, jetFlavourInfos = cms.InputTag("genJetFlavourAssociation"),)
-run2_nanoAOD_92X.toModify( matchGenBHadron, jetFlavourInfos = cms.InputTag("genJetFlavourAssociation"),)
 
 run2_miniAOD_80XLegacy.toModify( matchGenCHadron, jetFlavourInfos = cms.InputTag("genJetFlavourAssociation"),)
-run2_nanoAOD_92X.toModify( matchGenCHadron, jetFlavourInfos = cms.InputTag("genJetFlavourAssociation"),)
 
 
 ##################### Tables for final output and docs ##########################

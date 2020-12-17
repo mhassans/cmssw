@@ -1,13 +1,12 @@
 #ifndef DQM_L1TMonitor_L1TStage2uGMT_h
 #define DQM_L1TMonitor_L1TStage2uGMT_h
 
-
 #include "DataFormats/L1Trigger/interface/Muon.h"
 #include "DataFormats/L1TMuon/interface/RegionalMuonCand.h"
 #include "L1Trigger/L1TMuon/interface/MicroGMTConfiguration.h"
 
 #include "DQMServices/Core/interface/DQMEDAnalyzer.h"
-#include "DQMServices/Core/interface/MonitorElement.h"
+#include "DQMServices/Core/interface/DQMStore.h"
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
@@ -15,23 +14,17 @@
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 
-
 class L1TStage2uGMT : public DQMEDAnalyzer {
-
- public:
-
+public:
   L1TStage2uGMT(const edm::ParameterSet& ps);
   ~L1TStage2uGMT() override;
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
- protected:
-
-  void dqmBeginRun(const edm::Run&, const edm::EventSetup&) override;
+protected:
   void bookHistograms(DQMStore::IBooker&, const edm::Run&, const edm::EventSetup&) override;
   void analyze(const edm::Event&, const edm::EventSetup&) override;
 
- private:  
-
+private:
   l1t::tftype getTfOrigin(const int tfMuonIndex);
 
   edm::EDGetTokenT<l1t::RegionalMuonCandBxCollection> ugmtBMTFToken;
@@ -41,6 +34,7 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   std::string monitorDir;
   bool emul;
   bool verbose;
+  bool displacedQuantities_;
 
   const float etaScale_;
   const float phiScale_;
@@ -48,6 +42,8 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   MonitorElement* ugmtBMTFBX;
   MonitorElement* ugmtBMTFnMuons;
   MonitorElement* ugmtBMTFhwPt;
+  MonitorElement* ugmtBMTFhwPtUnconstrained;
+  MonitorElement* ugmtBMTFhwDXY;
   MonitorElement* ugmtBMTFhwEta;
   MonitorElement* ugmtBMTFhwPhi;
   MonitorElement* ugmtBMTFglbPhi;
@@ -119,6 +115,8 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   MonitorElement* ugmtnMuons;
   MonitorElement* ugmtMuonIndex;
   MonitorElement* ugmtMuonhwPt;
+  MonitorElement* ugmtMuonhwPtUnconstrained;
+  MonitorElement* ugmtMuonhwDXY;
   MonitorElement* ugmtMuonhwEta;
   MonitorElement* ugmtMuonhwPhi;
   MonitorElement* ugmtMuonhwEtaAtVtx;
@@ -129,6 +127,7 @@ class L1TStage2uGMT : public DQMEDAnalyzer {
   MonitorElement* ugmtMuonhwIso;
 
   MonitorElement* ugmtMuonPt;
+  MonitorElement* ugmtMuonPtUnconstrained;
   MonitorElement* ugmtMuonEta;
   MonitorElement* ugmtMuonPhi;
   MonitorElement* ugmtMuonEtaAtVtx;

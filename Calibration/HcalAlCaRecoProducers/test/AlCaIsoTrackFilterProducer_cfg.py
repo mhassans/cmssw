@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Config as cms
-from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process("ALCAISOTRACK",eras.Run2_2017)
+from Configuration.Eras.Era_Run2_2017_cff import Run2_2017
+process = cms.Process("ALCAISOTRACK",Run2_2017)
 
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('FWCore.MessageService.MessageLogger_cfi')
@@ -14,7 +14,7 @@ from Configuration.AlCa.autoCond import autoCond
 process.GlobalTag.globaltag=autoCond['run2_mc']
 
 if hasattr(process,'MessageLogger'):
-    process.MessageLogger.categories.append('HcalIsoTrack')
+    process.MessageLogger.HcalIsoTrack=dict()
 
 process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True)

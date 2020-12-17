@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from __future__ import print_function
+from builtins import range
 import re
 topfunc = re.compile("::(produce|analyze|filter|beginLuminosityBlock|beginRun|beginStream|streamBeginRun|streamBeginLuminosityBlock|streamEndRun|streamEndLuminosityBlock|globalBeginRun|globalEndRun|globalBeginLuminosityBlock|globalEndLuminosityBlock|endRun|endLuminosityBlock)\(")
 baseclass = re.compile("edm::(one::|stream::|global::)?ED(Producer|Filter|Analyzer)(Base)?")
@@ -8,7 +9,7 @@ fre = re.compile("function")
 
 statics = set()
 toplevelfuncs = set()
-skipfunc = re.compile("(edm::(LuminosityBlock::|Run::|Event::)getBy(Label|Token))|(fwlite::|edm::EDProductGetter::getIt|edm::Event::|edm::eventsetup::EventSetupRecord::get|edm::eventsetup::DataProxy::getImpl|edm::EventPrincipal::unscheduledFill|edm::ServiceRegistry::get|edm::eventsetup::EventSetupRecord::getImplementation|edm::eventsetup::EventSetupRecord::getFromProxy|edm::eventsetup::DataProxy::get|edm::serviceregistry::ServicesManager::MakerHolder::add|(cond::service::PoolDBOutputService::(writeOne|appendSinceTime|tagInfo))|edm::EventProcessor::|edm::SubProcess::)")
+skipfunc = re.compile("(edm::(LuminosityBlock::|Run::|Event::|Principal::)getBy(Label|Token))|(fwlite::|edm::EDProductGetter::getIt|edm::Event::|edm::eventsetup::EventSetupRecord::get|edm::eventsetup::DataProxy::getImpl|edm::EventPrincipal::unscheduledFill|edm::ServiceRegistry::get|edm::eventsetup::EventSetupRecord::getImplementation|edm::eventsetup::EventSetupRecord::getFromProxy|edm::eventsetup::DataProxy::get|edm::serviceregistry::ServicesManager::MakerHolder::add|(cond::service::PoolDBOutputService::(writeOne|appendSinceTime|tagInfo))|edm::EventProcessor::|edm::SubProcess::)")
 skipfuncs=set()
 
 import networkx as nx

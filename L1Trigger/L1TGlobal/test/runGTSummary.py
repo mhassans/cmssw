@@ -3,8 +3,8 @@
 from __future__ import print_function
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.StandardSequences.Eras import eras
-process = cms.Process('L1GTSUMMARY',eras.Run2_2016)
+from Configuration.Eras.Era_Run2_2016_cff import Run2_2016
+process = cms.Process('L1GTSUMMARY',Run2_2016)
 
 process.load('Configuration.StandardSequences.Services_cff')
 process.load('FWCore.MessageService.MessageLogger_cfi')
@@ -15,7 +15,7 @@ process.load('Configuration.StandardSequences.RawToDigi_Data_cff')
 
 ##process.load('L1Trigger/L1TGlobal/debug_messages_cfi')
 ## process.MessageLogger.l1t_debug.l1t.limit = cms.untracked.int32(100000)
-#process.MessageLogger.categories.append('l1t|Global')
+#
 #process.MessageLogger.debugModules = cms.untracked.vstring('*')
 #process.MessageLogger.cerr.threshold = cms.untracked.string('DEBUG')
 

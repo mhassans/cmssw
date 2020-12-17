@@ -1,5 +1,5 @@
 import FWCore.ParameterSet.Config as cms
-
+import six
 process = cms.Process("CALIB")
 
 ####################################################
@@ -11,11 +11,14 @@ def getFileInPath(rfile):
    return None
 
 process.MessageLogger = cms.Service("MessageLogger",
-    debugModules = cms.untracked.vstring(''),
+    cerr = cms.untracked.PSet(
+        enable = cms.untracked.bool(False)
+    ),
     cout = cms.untracked.PSet(
+        enable = cms.untracked.bool(True),
         threshold = cms.untracked.string('INFO')
     ),
-    destinations = cms.untracked.vstring('cout')
+    debugModules = cms.untracked.vstring('')
 )
 
 process.source = cms.Source("EmptyIOVSource",
@@ -53,7 +56,7 @@ with open(detIDsFileName,"r") as detIDs:  # create dictionary online -> rawid
 #print(detDict)
 
 APVsToKill = []
-for det,napv in detDict.iteritems():
+for det,napv in six.iteritems(detDict):
     APVsToKill.append(
         cms.PSet(
             DetId = cms.uint32(int(det)),        	 
@@ -62,7 +65,6 @@ for det,napv in detDict.iteritems():
         )
 
 #Populate ES
-process.SiStripDetInfoFileReader = cms.Service("SiStripDetInfoFileReader")
 process.load("CalibTracker.SiStripESProducers.fake.SiStripBadModuleConfigurableFakeESSource_cfi")
 from CalibTracker.SiStripESProducers.fake.SiStripBadModuleConfigurableFakeESSource_cfi import siStripBadModuleConfigurableFakeESSource
 siStripBadModuleConfigurableFakeESSource.doByAPVs = cms.untracked.bool(True)  
@@ -112,11 +114,11 @@ process.siStripQualityESProducer.ListOfRecordToMerge = cms.VPSet(
      )
 
 #### Add these lines to produce a tracker map
-process.load("DQM.SiStripCommon.TkHistoMap_cff")
 # load TrackerTopology (needed for TkDetMap and TkHistoMap)
-process.load("Geometry.CMSCommonData.cmsExtendedGeometry2017XML_cfi")
+process.load("Configuration.Geometry.GeometryExtended2017_cff")
 process.load("Geometry.TrackerGeometryBuilder.trackerParameters_cfi")
 process.TrackerTopologyEP = cms.ESProducer("TrackerTopologyEP")
+process.load("DQM.SiStripCommon.TkHistoMap_cff")
 ####
 
 from DQMServices.Core.DQMEDAnalyzer import DQMEDAnalyzer

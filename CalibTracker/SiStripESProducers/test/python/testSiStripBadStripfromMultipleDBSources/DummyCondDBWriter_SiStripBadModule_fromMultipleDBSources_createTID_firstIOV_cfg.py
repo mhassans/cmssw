@@ -3,11 +3,15 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("CALIB")
 
 process.MessageLogger = cms.Service("MessageLogger",
-    debugModules = cms.untracked.vstring(''),
-    QualityReader = cms.untracked.PSet(
-        threshold = cms.untracked.string('INFO')
+    cerr = cms.untracked.PSet(
+        enable = cms.untracked.bool(False)
     ),
-    destinations = cms.untracked.vstring('QualityReader')
+    debugModules = cms.untracked.vstring(''),
+    files = cms.untracked.PSet(
+        QualityReader = cms.untracked.PSet(
+            threshold = cms.untracked.string('INFO')
+        )
+    )
 )
 
 process.source = cms.Source("EmptyIOVSource",
@@ -22,7 +26,6 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 #Populate ES
-process.SiStripDetInfoFileReader = cms.Service("SiStripDetInfoFileReader")
 process.load("CalibTracker.SiStripESProducers.fake.SiStripBadModuleConfigurableFakeESSource_cfi")
 from CalibTracker.SiStripESProducers.fake.SiStripBadModuleConfigurableFakeESSource_cfi import siStripBadModuleConfigurableFakeESSource
 siStripBadModuleConfigurableFakeESSource.BadComponentList = cms.untracked.VPSet(   cms.PSet(

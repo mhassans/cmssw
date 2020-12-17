@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import range, object
 import inspect
 import six
 
@@ -8,10 +9,12 @@ class _ConfigureComponent(object):
         return False
 
 class PrintOptions(object):
-    def __init__(self):
-        self.indent_= 0
-        self.deltaIndent_ = 4
-        self.isCfg = True
+    def __init__(self, indent = 0, deltaIndent = 4, process = True, targetDirectory = None, useSubdirectories = False):
+        self.indent_= indent
+        self.deltaIndent_ = deltaIndent
+        self.isCfg = process
+        self.targetDirectory = targetDirectory
+        self.useSubdirectories = useSubdirectories
     def indentation(self):
         return ' '*self.indent_
     def indent(self):
@@ -81,7 +84,9 @@ class _ParameterTypeBase(object):
         return self._isFrozen 
     def setIsFrozen(self):
         self._isFrozen = True
-
+    def isCompatibleCMSType(self,aType):
+        return isinstance(self,aType)
+ 
 class _SimpleParameterTypeBase(_ParameterTypeBase):
     """base class for parameter classes which only hold a single value"""
     def __init__(self,value):
@@ -161,6 +166,7 @@ class _Parameterizable(object):
     def __init__(self,*arg,**kargs):
         self.__dict__['_Parameterizable__parameterNames'] = []
         self.__dict__["_isFrozen"] = False
+        self.__dict__['_Parameterizable__validator'] = None
         """The named arguments are the 'parameters' which are added as 'python attributes' to the object"""
         if len(arg) != 0:
             #raise ValueError("unnamed arguments are not allowed. Please use the syntax 'name = value' when assigning arguments.")
@@ -227,8 +233,15 @@ class _Parameterizable(object):
         return result
 
     def __addParameter(self, name, value):
+        if name == 'allowAnyLabel_':
+            self.__validator = value
+            self._isModified = True
+            return
         if not isinstance(value,_ParameterTypeBase):
-            self.__raiseBadSetAttr(name)
+            if self.__validator is not None:
+                value = self.__validator.convert_(value)
+            else:
+                self.__raiseBadSetAttr(name)
         if name in self.__dict__:
             message = "Duplicate insert of member " + name
             message += "\nThe original parameters are:\n"
@@ -239,9 +252,14 @@ class _Parameterizable(object):
         self._isModified = True
 
     def __setParameters(self,parameters):
+        v = None
         for name,value in six.iteritems(parameters):
+            if name == 'allowAnyLabel_':
+                v = value
+                continue
             self.__addParameter(name, value)
-
+        if v is not None:
+            self.__validator=v
     def __setattr__(self,name,value):
         #since labels are not supposed to have underscores at the beginning
         # I will assume that if we have such then we are setting an internal variable
@@ -346,6 +364,10 @@ class _Parameterizable(object):
         # usings need to go first
         resultList = usings
         resultList.extend(others)
+        if self.__validator is not None:
+            options.indent()
+            resultList.append(options.indentation()+"allowAnyLabel_="+self.__validator.dumpPython(options))
+            options.unindent()
         return ',\n'.join(resultList)+'\n'
     def __repr__(self):
         return self.dumpPython()
@@ -400,6 +422,8 @@ class _TypedParameterizable(_Parameterizable):
             args.append(None)
         
         _modifyParametersFromDict(myparams, params, self._Parameterizable__raiseBadSetAttr)
+        if self._Parameterizable__validator is not None:
+            myparams["allowAnyLabel_"] = self._Parameterizable__validator
 
         returnValue.__init__(self.__type,*args,
                              **myparams)
@@ -438,6 +462,9 @@ class _TypedParameterizable(_Parameterizable):
                             params[name] = getattr(default,name)
                         return params
         return None
+
+    def directDependencies(self):
+        return []
     
     def dumpConfig(self, options=PrintOptions()):
         config = self.__type +' { \n'
@@ -520,7 +547,10 @@ class _Labelable(object):
     def dumpSequenceConfig(self):
         return str(self.__label)
     def dumpSequencePython(self, options=PrintOptions()):
-        return 'process.'+str(self.__label)
+        if options.isCfg:
+            return 'process.'+str(self.__label)
+        else:
+            return str(self.__label)
     def _findDependencies(self,knownDeps,presentDeps):
         #print 'in labelled'
         myDeps=knownDeps.get(self.label_(),None)
@@ -565,14 +595,21 @@ class _ValidatingListBase(list):
             if not self._itemIsValid(item):
                 return False
         return True
+    def _itemFromArgument(self, x):
+        return x
+    def _convertArguments(self, seq):
+        if isinstance(seq, str):
+            yield seq
+        for x in seq:
+            yield self._itemFromArgument(x)
     def append(self,x):
         if not self._itemIsValid(x):
             raise TypeError("wrong type being appended to container "+self._labelIfAny())
-        super(_ValidatingListBase,self).append(x)
+        super(_ValidatingListBase,self).append(self._itemFromArgument(x))
     def extend(self,x):
         if not self._isValid(x):
             raise TypeError("wrong type being extended to container "+self._labelIfAny())
-        super(_ValidatingListBase,self).extend(x)
+        super(_ValidatingListBase,self).extend(self._convertArguments(x))
     def __add__(self,rhs):
         if not self._isValid(rhs):
             raise TypeError("wrong type being added to container "+self._labelIfAny())
@@ -583,7 +620,7 @@ class _ValidatingListBase(list):
     def insert(self,i,x):
         if not self._itemIsValid(x):
             raise TypeError("wrong type being inserted to container "+self._labelIfAny())
-        super(_ValidatingListBase,self).insert(i,x)
+        super(_ValidatingListBase,self).insert(i,self._itemFromArgument(x))
     def _labelIfAny(self):
         result = type(self).__name__
         if hasattr(self, '__label'):
@@ -651,14 +688,15 @@ class _ValidatingParameterListBase(_ValidatingListBase,_ParameterTypeBase):
             result +=' ) '
         result += ')'
         return result            
+    def directDependencies(self):
+        return []
     @staticmethod
     def _itemsFromStrings(strings,converter):
         return (converter(x).value() for x in strings)
 
 def saveOrigin(obj, level):
-    frame = inspect.stack()[level+1]
-    if isinstance(frame,tuple): frame=frame[0] #python3 changes this to a tuple where the first thing is the frame
-    fInfo=inspect.getframeinfo(frame)
+    import sys
+    fInfo = inspect.getframeinfo(sys._getframe(level+1))
     obj._filename = fInfo.filename
     obj._lineNumber =fInfo.lineno
 
@@ -745,7 +783,7 @@ if __name__ == "__main__":
         def testLargeList(self):
             #lists larger than 255 entries can not be initialized
             #using the constructor
-            args = [i for i in xrange(0,300)]
+            args = [i for i in range(0,300)]
             
             t = TestList(*args)
             pdump= t.dumpPython()
@@ -827,7 +865,7 @@ if __name__ == "__main__":
                 def __init__(self):
                     self.tLPTest = tLPTest
                     self.tLPTestType = tLPTestType
-            p = tLPTest("MyType",** dict( [ ("a"+str(x), tLPTestType(x)) for x in xrange(0,300) ] ) )
+            p = tLPTest("MyType",** dict( [ ("a"+str(x), tLPTestType(x)) for x in range(0,300) ] ) )
             #check they are the same
             self.assertEqual(p.dumpPython(), eval(p.dumpPython(),{"cms": __DummyModule()}).dumpPython())
         def testSpecialImportRegistry(self):

@@ -4,6 +4,7 @@
 '''
 from __future__ import print_function
 
+from builtins import range
 __author__ = 'Marco Musich'
 __copyright__ = 'Copyright 2015, CERN CMS'
 __credits__ = ['Ernesto Migliore', 'Salvatore Di Guida', 'Javier Duarte']
@@ -16,7 +17,7 @@ import datetime,time
 import os,sys
 import copy
 import string, re
-import ConfigParser, json
+import configparser as ConfigParser, json
 from optparse import OptionParser
 from subprocess import Popen, PIPE
 
@@ -167,7 +168,7 @@ def split(sequence, size):
 # based on http://sandrotosi.blogspot.com/2011/04/python-group-list-in-sub-lists-of-n.html
 # about generators see also http://stackoverflow.com/questions/231767/the-python-yield-keyword-explained
 ##########################
-    for i in xrange(0, len(sequence), size):
+    for i in range(0, len(sequence), size):
         yield sequence[i:i+size] 
 
 #############
@@ -586,7 +587,7 @@ def main():
         if (to_bool(isMC[iConf]) or (not to_bool(doRunBased))):
             if(to_bool(isMC[iConf])):
                 print("this is MC")
-                cmd = 'das_client.py --limit=0 --query \'file dataset='+opts.data+'\''
+                cmd = 'dasgoclient -query \'file dataset='+opts.data+'\''
                 s = Popen(cmd , shell=True, stdout=PIPE, stderr=PIPE)
                 out,err = s.communicate()
                 mylist = out.split('\n')
@@ -599,7 +600,7 @@ def main():
                     myRuns.append(str(1))
             else:
                 print("this is DATA (not doing full run-based selection)")
-                cmd = 'das_client.py --limit=0 --query \'file dataset='+opts.data+' run='+runboundary[iConf]+'\''
+                cmd = 'dasgoclient -query \'file dataset='+opts.data+' run='+runboundary[iConf]+'\''
                 #print cmd
                 s = Popen(cmd , shell=True, stdout=PIPE, stderr=PIPE)
                 out,err = s.communicate()
@@ -613,7 +614,7 @@ def main():
         else:
             print("this is Data")
             print("doing run based selection")
-            cmd = 'das_client.py --limit=0 --query \'run dataset='+opts.data+'\''
+            cmd = 'dasgoclient -query \'run dataset='+opts.data+'\''
             p = Popen(cmd , shell=True, stdout=PIPE, stderr=PIPE)
             out, err = p.communicate()
             listOfRuns=out.split('\n')
@@ -627,7 +628,7 @@ def main():
 
             for run in listOfRuns:
                 #print "preparing run",run
-                cmd2 = ' das_client.py --limit=0 --query \'file run='+run+' dataset='+opts.data+'\''
+                cmd2 = ' dasgoclient -query \'file run='+run+' dataset='+opts.data+'\''
                 q = Popen(cmd2 , shell=True, stdout=PIPE, stderr=PIPE)
                 procs.append(q)
                 #out2, err2 = q.communicate()

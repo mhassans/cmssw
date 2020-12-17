@@ -8,8 +8,8 @@ import FWCore.ParameterSet.Config as cms
 # options.parseArguments()
 updatedTauName = "slimmedTausNewID"
 minimalOutput = True
-eventsToProcess = 1000
-nThreads = 2
+eventsToProcess = 100
+nThreads = 1
 
 process = cms.Process('TauID')
 process.load('Configuration.StandardSequences.MagneticField_cff')
@@ -23,18 +23,19 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2018_realistic', '
 # Input source
 process.source = cms.Source('PoolSource', fileNames = cms.untracked.vstring(
     # File from dataset DY1JetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8
-    '/store/mc/RunIIFall17MiniAODv2/TTToHadronic_mtop169p5_TuneCP5_PSweights_13TeV-powheg-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v3/100000/64BE09E8-76A8-E811-8602-FA163EC538AA.root'
+    '/store/relval/CMSSW_10_5_0_pre1/RelValZTT_13/MINIAODSIM/PU25ns_103X_upgrade2018_realistic_v8-v1/20000/EA29017F-9967-3F41-BB8A-22C44A454235.root'
 ))
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(eventsToProcess) )
 
 # Add new TauIDs
 import RecoTauTag.RecoTau.tools.runTauIdMVA as tauIdConfig
-tauIdEmbedder = tauIdConfig.TauIDEmbedder(process, cms, debug = False,
+tauIdEmbedder = tauIdConfig.TauIDEmbedder(process, debug = False,
                     updatedTauName = updatedTauName,
                     toKeep = [ "2017v2", "dR0p32017v2", "newDM2017v2",
-                               "deepTau2017v1",
-                               "DPFTau_2016_v0",
+                               # "deepTau2017v1",
+                               "deepTau2017v2p1",
+                               # "DPFTau_2016_v0",
                                # "DPFTau_2016_v1",
                                "againstEle2018",
                                ])

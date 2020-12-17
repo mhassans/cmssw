@@ -12,10 +12,11 @@
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "Geometry/Records/interface/MTDDigiGeometryRecord.h"
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
-#include "boost/mpl/vector.hpp"
+#include "FWCore/Utilities/interface/mplVector.h"
 
-
-class GlobalTrackingGeometryRecord : public edm::eventsetup::DependentRecordImplementation<GlobalTrackingGeometryRecord,boost::mpl::vector<TrackerDigiGeometryRecord,MTDDigiGeometryRecord,MuonGeometryRecord> > {};
+class GlobalTrackingGeometryRecord
+    : public edm::eventsetup::DependentRecordImplementation<
+          GlobalTrackingGeometryRecord,
+          edm::mpl::Vector<TrackerDigiGeometryRecord, MTDDigiGeometryRecord, MuonGeometryRecord> > {};
 
 #endif
-

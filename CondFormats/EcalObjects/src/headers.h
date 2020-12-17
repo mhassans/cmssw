@@ -6,8 +6,9 @@
 #include "CondFormats/EcalObjects/interface/EcalPulseSymmCovariances.h"
 #include "CondFormats/EcalObjects/interface/EcalPFRecHitThresholds.h"
 #include "CondFormats/EcalObjects/interface/EcalSimPulseShape.h"
+#include "CondFormats/EcalObjects/interface/EcalMustacheSCParameters.h"
+#include "CondFormats/EcalObjects/interface/EcalSCDynamicDPhiParameters.h"
 
 #include "CondFormats/External/interface/EcalDetID.h"
 #include "CondFormats/External/interface/SMatrix.h"
 #include "CondFormats/External/interface/Timestamp.h"
-
