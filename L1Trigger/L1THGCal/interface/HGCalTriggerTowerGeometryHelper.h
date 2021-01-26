@@ -38,6 +38,8 @@ public:
   unsigned short getTriggerTower(const l1t::HGCalTriggerCell&) const;
   unsigned short getTriggerTower(const l1t::HGCalTriggerSums&) const;
 
+  unsigned HGCalTriggerTowerGeometryHelper::uvMapping(unsigned layer, std::pair<int,int> &uv);
+
 private:
   std::vector<l1t::HGCalTowerCoord> tower_coords_;
   std::unordered_map<unsigned, short> cells_to_trigger_towers_;

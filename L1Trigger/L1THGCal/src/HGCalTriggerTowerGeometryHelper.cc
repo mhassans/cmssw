@@ -116,6 +116,17 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTowerFromEtaPhi(const 
     bin_phi = bin_phi_l - binsPhi_.begin() - 1;
   }
   int zside = eta < 0 ? -1 : 1;
+
+//TESSSSSSSSSSSSSSSSSSSTTTTTTTTTTTTTTTTTTTTTTTTT
+  if(bin_eta<3 && bin_phi>34 && bin_phi<39){
+    std::cout<<"*******"<<std::endl;
+    std::cout<<"eta="<<eta<<",  phi="<<phi<<std::endl;
+    std::cout<<"bin_eta="<<bin_eta<<",  bin_phi="<<bin_phi<<",  rawID="<<l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId()<<std::endl;
+    std::cout<<"zside="<<zside<<std::endl;
+    std::cout<<"*******"<<std::endl;
+  }
+//TESSSSSSSSSSSSSSSSSSSTTTTTTTTTTTTTTTTTTTTTTTTT
+
   return l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId();
 }
 
@@ -131,6 +142,75 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
   return getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi());
 }
 
-unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
-  return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
+//Original function
+//unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
+//  return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
+//}
+
+unsigned HGCalTriggerTowerGeometryHelper::uvMapping(unsigned layer, std::pair<int,int> &uv) {
+  unsigned sector(0);
+  int offset;
+  
+  if(layer<=28) { // CE-E    
+    if(uv.first>0 && uv.second>=0) return sector;
+    
+    offset=0;
+    if(uv.first>=uv.second && uv.second<0) sector=2;
+    else sector=1;
+    
+  } else if((layer%2)==1) { // CE-H Odd
+    if(uv.first>=0 && uv.second>=0) return sector;
+    
+    offset=-1;    
+    if(uv.first>uv.second && uv.second<0) sector=2;
+    else sector=1;
+    
+  } else { // CE-H Even
+    if(uv.first>=1 && uv.second>=1) return sector;
+    
+    offset=1;
+    if(uv.first>=uv.second && uv.second<1) sector=2;
+    else sector=1;
+  }
+  
+  int up,vp;
+  
+  if(sector==1) {
+    up=uv.second-uv.first;
+    vp=-uv.first+offset;    
+    
+  } else {
+    up=-uv.second+offset;
+    vp=uv.first-uv.second+offset;
+  }
+  
+  uv.first=up;
+  uv.second=vp;
+  return sector;
 }
+
+
+unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
+  HGCSiliconDetId detid(thesum.detId());
+  int waferu = detid.waferU();
+  int waferv = detid.waferV();
+  int layer = detid.layer();
+  if(triggerTools_.isSilicon(detid))//if u or v non-negative, etc.
+    return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
+  else
+    return 0;
+  
+  
+  //std::cout<<", waferu="<<waferu<<",  waferv="<<waferv<<",  layer="<<layer<<std::endl;
+  //std::cout<<"silicon="<<triggerTools_.isSilicon(detid)<<std::endl;
+  
+ // if(layer==5 && waferu==-4 && waferv==1){
+ // std::cout<<"*******"<<std::endl;
+ // std::cout<<""<<std::endl;
+ // std::cout<<"*******"<<std::endl;
+ // }
+  
+  //return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
+}
+
+//std::unordered_map<unsigned short, unsigned short> HGCalTriggerTowerGeometryHelper::getTriggerTowerSplit(const l1t::HGCalTriggerSums& thesum){}

@@ -69,6 +69,9 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic', '')
 # load HGCAL TPG simulation
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
 
+from L1Trigger.L1THGCal.customTriggerSums import custom_full_trigger_sums
+process = custom_full_trigger_sums(process)
+
 process.hgcl1tpg_step = cms.Path(process.hgcalTriggerPrimitives)
 
 
