@@ -147,47 +147,47 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
 //  return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 //}
 
-unsigned HGCalTriggerTowerGeometryHelper::uvMapping(unsigned layer, std::pair<int,int> &uv) {
-  unsigned sector(0);
-  int offset;
-  
-  if(layer<=28) { // CE-E    
-    if(uv.first>0 && uv.second>=0) return sector;
-    
-    offset=0;
-    if(uv.first>=uv.second && uv.second<0) sector=2;
-    else sector=1;
-    
-  } else if((layer%2)==1) { // CE-H Odd
-    if(uv.first>=0 && uv.second>=0) return sector;
-    
-    offset=-1;    
-    if(uv.first>uv.second && uv.second<0) sector=2;
-    else sector=1;
-    
-  } else { // CE-H Even
-    if(uv.first>=1 && uv.second>=1) return sector;
-    
-    offset=1;
-    if(uv.first>=uv.second && uv.second<1) sector=2;
-    else sector=1;
-  }
-  
-  int up,vp;
-  
-  if(sector==1) {
-    up=uv.second-uv.first;
-    vp=-uv.first+offset;    
-    
-  } else {
-    up=-uv.second+offset;
-    vp=uv.first-uv.second+offset;
-  }
-  
-  uv.first=up;
-  uv.second=vp;
-  return sector;
-}
+//unsigned HGCalTriggerTowerGeometryHelper::uvMapping(unsigned layer, std::pair<int,int> &uv) {
+//  unsigned sector(0);
+//  int offset;
+//  
+//  if(layer<=28) { // CE-E    
+//    if(uv.first>0 && uv.second>=0) return sector;
+//    
+//    offset=0;
+//    if(uv.first>=uv.second && uv.second<0) sector=2;
+//    else sector=1;
+//    
+//  } else if((layer%2)==1) { // CE-H Odd
+//    if(uv.first>=0 && uv.second>=0) return sector;
+//    
+//    offset=-1;    
+//    if(uv.first>uv.second && uv.second<0) sector=2;
+//    else sector=1;
+//    
+//  } else { // CE-H Even
+//    if(uv.first>=1 && uv.second>=1) return sector;
+//    
+//    offset=1;
+//    if(uv.first>=uv.second && uv.second<1) sector=2;
+//    else sector=1;
+//  }
+//  
+//  int up,vp;
+//  
+//  if(sector==1) {
+//    up=uv.second-uv.first;
+//    vp=-uv.first+offset;    
+//    
+//  } else {
+//    up=-uv.second+offset;
+//    vp=uv.first-uv.second+offset;
+//  }
+//  
+//  uv.first=up;
+//  uv.second=vp;
+//  return sector;
+//}
 
 
 unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
@@ -195,11 +195,27 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
   int waferu = detid.waferU();
   int waferv = detid.waferV();
   int layer = detid.layer();
-  if(triggerTools_.isSilicon(detid))//if u or v non-negative, etc.
+
+  std::ifstream input("inputFile/tower_per_module.txt");
+  std::vector<std::string> result;
+  for( std::string line; getline( input, line ); ){
+      std::stringstream ss(line);
+      result.clear(); 
+      while(ss.good()){
+          std::string substr;
+          std::getline(ss, substr, ' ');
+          result.push_back(substr);
+     }
+  }
+
+  if(triggerTools_.isSilicon(detid)){//if u or v non-negative, etc.
+    //std::cout<<l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId()<<std::endl;
+    //std::cout<<getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
     return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
-  else
+  }
+  else{
     return 0;
-  
+  }
   
   //std::cout<<", waferu="<<waferu<<",  waferv="<<waferv<<",  layer="<<layer<<std::endl;
   //std::cout<<"silicon="<<triggerTools_.isSilicon(detid)<<std::endl;
