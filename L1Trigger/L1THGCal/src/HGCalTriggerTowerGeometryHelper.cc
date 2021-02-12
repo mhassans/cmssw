@@ -118,13 +118,11 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTowerFromEtaPhi(const 
   int zside = eta < 0 ? -1 : 1;
 
 //TESSSSSSSSSSSSSSSSSSSTTTTTTTTTTTTTTTTTTTTTTTTT
-  if(bin_eta<3 && bin_phi>34 && bin_phi<39){
     std::cout<<"*******"<<std::endl;
     std::cout<<"eta="<<eta<<",  phi="<<phi<<std::endl;
-    std::cout<<"bin_eta="<<bin_eta<<",  bin_phi="<<bin_phi<<",  rawID="<<l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId()<<std::endl;
+    std::cout<<"thierbin_eta="<<bin_eta<<",  theirbin_phi="<<bin_phi<<",  rawID="<<l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId()<<std::endl;
     std::cout<<"zside="<<zside<<std::endl;
     std::cout<<"*******"<<std::endl;
-  }
 //TESSSSSSSSSSSSSSSSSSSTTTTTTTTTTTTTTTTTTTTTTTTT
 
   return l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId();
@@ -195,23 +193,35 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
   int waferu = detid.waferU();
   int waferv = detid.waferV();
   int layer = detid.layer();
+  
+  if(triggerTools_.isSilicon(detid) && waferu>=1 && waferv>=1){//if u or v non-negative, etc.  
+ //   std::ifstream input("inputFile/tower_per_module.txt");
+ //   std::vector<std::string> result;
+ //   for( std::string line; getline( input, line ); ){
+ //       std::stringstream ss(line);
+ //       while(ss.good()){
+ //           std::string substr;
+ //           std::getline(ss, substr, ' ');
+ //           result.push_back(substr);
+ //      }
 
-  std::ifstream input("inputFile/tower_per_module.txt");
-  std::vector<std::string> result;
-  for( std::string line; getline( input, line ); ){
-      std::stringstream ss(line);
-      result.clear(); 
-      while(ss.good()){
-          std::string substr;
-          std::getline(ss, substr, ' ');
-          result.push_back(substr);
-     }
-  }
-
-  if(triggerTools_.isSilicon(detid)){//if u or v non-negative, etc.
-    //std::cout<<l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId()<<std::endl;
-    //std::cout<<getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
-    return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
+ //      if (std::stoi(result[0])==layer && std::stoi(result[1])==waferu && std::stoi(result[2])==waferv){
+ //         break;
+ //      }
+ //      else{
+ //         result.clear();
+ //      }
+ //   }
+ //   
+ //   for (int i=1; i<=std::stoi(result[3]); i++){
+ //       int zside = thesum.position().eta() < 0 ? -1 : 1;
+ //       std::cout<<"iter="<<i<<", myeta="<<std::stoi(result[3*i+1])<<", myphi="<<std::stoi(result[3*i+2])<<", frac="<<std::stoi(result[3*i+3])<<std::endl;
+ //       std::cout<<"myTT:"<<l1t::HGCalTowerID( zside, std::stoi(result[3*i+1]), std::stoi(result[3*i+2]) ).rawId()<<std::endl;
+ //       std::cout<<"theirTT:"<<getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
+ //       std::cout<<"------------------"<<std::endl;
+ //   }
+ //   std::cout<<"++++++++++FINISH+++++++++++++"<<std::endl;
+    return 0;//getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
   }
   else{
     return 0;
