@@ -119,10 +119,10 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTowerFromEtaPhi(const 
 
 //TESSSSSSSSSSSSSSSSSSSTTTTTTTTTTTTTTTTTTTTTTTTT
     std::cout<<"*******"<<std::endl;
-    std::cout<<"eta="<<eta<<",  phi="<<phi<<std::endl;
-    std::cout<<"thierbin_eta="<<bin_eta<<",  theirbin_phi="<<bin_phi<<",  rawID="<<l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId()<<std::endl;
-    std::cout<<"zside="<<zside<<std::endl;
-    std::cout<<"*******"<<std::endl;
+    std::cout<<"theireta="<<eta<<",  theirphi="<<phi<<std::endl;
+    std::cout<<"thierbin_eta="<<bin_eta<<",  theirbin_phi="<<bin_phi<<std::endl;
+    std::cout<<"theirZside="<<zside<<std::endl;
+    std::cout<<"theirTT:";
 //TESSSSSSSSSSSSSSSSSSSTTTTTTTTTTTTTTTTTTTTTTTTT
 
   return l1t::HGCalTowerID(zside, bin_eta, bin_phi).rawId();
@@ -217,15 +217,15 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
        }
     }
    
-   //for (auto ele : result)            
+   std::cout<<"layer="<<layer<<", u="<<waferu<<", v="<<waferv<<", zside="<<zside<<std::endl;
+   //for (auto ele : result)
    //   std::cout<<ele<<"-";
-   //std::cout<<std::endl;
-   // for (int i=1; i<=std::stoi(result[3]); i++){
-   //     std::cout<<"iter="<<i<<", myeta="<<std::stoi(result[3*i+1])<<", myphi="<<std::stoi(result[3*i+2])<<", frac="<<std::stoi(result[3*i+3])<<std::endl;
-   //     std::cout<<"myTT:"<<l1t::HGCalTowerID( zside, std::stoi(result[3*i+1]), std::stoi(result[3*i+2]) ).rawId()<<std::endl;
-   //     std::cout<<"theirTT:"<<getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
-   //     std::cout<<"------------------"<<std::endl;
-   // }
+    for (int i=1; i<=std::stoi(result[3]); i++){
+        std::cout<<"iter="<<i<<", myeta="<<std::stoi(result[3*i+1])<<", myphi="<<36 + std::stoi(result[3*i+2])<<", frac="<<std::stoi(result[3*i+3])<<std::endl;
+        std::cout<<"myTT:"<<l1t::HGCalTowerID( zside, std::stoi(result[3*i+1]), 36 + std::stoi(result[3*i+2]) ).rawId()<<std::endl;
+        std::cout<<"------------------"<<std::endl;
+    }
+    std::cout<<getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi())<<std::endl;
     std::cout<<"++++++++++FINISH+++++++++++++"<<std::endl;
     return 0;//getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
   }
