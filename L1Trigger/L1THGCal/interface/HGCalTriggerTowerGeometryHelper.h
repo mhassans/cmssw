@@ -15,6 +15,7 @@
 #include "L1Trigger/L1THGCal/interface/HGCalTriggerTools.h"
 #include "DataFormats/L1THGCal/interface/HGCalTriggerCell.h"
 #include "DataFormats/L1THGCal/interface/HGCalTriggerSums.h"
+#include "L1Trigger/L1THGCal/interface/HGCalModuleDetId.h"
 
 #include <vector>
 #include <unordered_map>

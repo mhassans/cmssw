@@ -133,5 +133,60 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
 }
 
 unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
+  HGCalModuleDetId detid(thesum.detId());
+  int moduleU = detid.moduleU();
+  int moduleV = detid.moduleV();
+  int layer = detid.layer();
+  int sector = detid.sector();
+  int zside = detid.zside();
+
+  int subdet = -1;
+  if(detid.isHScintillator()){
+    std::cout<<"CEH_Scint"<<std::endl;
+    subdet = 2;
+    layer += 28;
+    } else if(detid.isEE()){
+      std::cout<<"CEE"<<std::endl;
+      subdet = 0;
+    } else if(detid.isHSilicon()) {
+      std::cout<<"CEH_Sil"<<std::endl;
+      subdet = 1;
+      layer += 28;
+  }
+  std::ifstream input("../L1Trigger/L1THGCal/data/tower_per_module.txt");
+
+  std::vector<std::string> result;
+  std::string line;
+  getline(input, line); //To skip column names row
+  
+  for( std::string line; getline( input, line ); ){
+      std::stringstream ss(line);
+      while(ss.good()){
+          std::string substr;
+          std::getline(ss, substr, ' ');
+          result.push_back(substr);
+     }
+
+     if (std::stoi(result[0])==subdet && std::stoi(result[1])==layer && std::stoi(result[2])==moduleU && std::stoi(result[3])==moduleV){
+        break;
+     }
+     else{
+        result.clear();
+     }
+  }
+ 
+  std::unordered_map<unsigned short, int> dict = {};
+
+  int towerEta;
+  int towerPhi;
+
+  for (int i=1; i<=std::stoi(result[4]); i++){
+    towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
+    towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3) % int(nBinsPhi_); // move to the correct sector
+    towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
+    dict.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stoi(result[3*i+4]) } );
+  }
+
+  std::cout<<"+++++++++++++++++++++FINISH++++++++++++++++"<<std::endl;
   return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 }
