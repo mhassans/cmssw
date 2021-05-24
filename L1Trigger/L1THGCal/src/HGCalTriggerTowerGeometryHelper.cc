@@ -117,22 +117,26 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTowerFromEtaPhi(const 
     bin_phi = bin_phi_l - binsPhi_.begin() - 1;
   }
   int zside = eta < 0 ? -1 : 1;
+
   return l1t::HGCalTowerID(doNose_, zside, bin_eta, bin_phi).rawId();
 }
 
-unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerCell& thecell) const {
+std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerCell& thecell) const {
+  std::unordered_map<unsigned short, float> binIDandShares = {}; 
   unsigned int trigger_cell_id = thecell.detId();
   // NOTE: if the TC is not found in the map than it is mapped via eta-phi coords.
   // this can be considered dangerous (silent failure of the map) but it actually allows to save
   // memory mapping explicitly only what is actually needed
   auto tower_id_itr = cells_to_trigger_towers_.find(trigger_cell_id);
-  if (tower_id_itr != cells_to_trigger_towers_.end())
-    return tower_id_itr->second;
-
-  return getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi());
+  if (tower_id_itr != cells_to_trigger_towers_.end()){
+    binIDandShares.insert({tower_id_itr->second, 1});
+    return binIDandShares;
+  }
+  binIDandShares.insert({getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi()), 1});
+  return binIDandShares;
 }
 
-unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
+std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
   HGCalModuleDetId detid(thesum.detId());
   int moduleU = detid.moduleU();
   int moduleV = detid.moduleV();
@@ -141,17 +145,18 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
   int zside = detid.zside();
 
   int subdet = -1;
-  if(detid.isHScintillator()){
-    std::cout<<"CEH_Scint"<<std::endl;
+  int splitDevisor = -1;
+  if(detid.isHScintillator()){ //FIXME HFNose not handled
     subdet = 2;
     layer += 28;
+    splitDevisor = 16; //FIXME should be added from the config
     } else if(detid.isEE()){
-      std::cout<<"CEE"<<std::endl;
       subdet = 0;
+      splitDevisor = 8;
     } else if(detid.isHSilicon()) {
-      std::cout<<"CEH_Sil"<<std::endl;
       subdet = 1;
       layer += 28;
+      splitDevisor = 8;
   }
   std::ifstream input("../L1Trigger/L1THGCal/data/tower_per_module.txt");
 
@@ -175,7 +180,7 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
      }
   }
  
-  std::unordered_map<unsigned short, int> dict = {};
+  std::unordered_map<unsigned short, float> binIDandShares = {};
 
   int towerEta;
   int towerPhi;
@@ -184,9 +189,10 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
     towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
     towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3) % int(nBinsPhi_); // move to the correct sector
     towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
-    dict.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stoi(result[3*i+4]) } );
+    binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDevisor } );
   }
+ 
+  return binIDandShares; //FIXME return choice with a boolean from the config
+ // return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 
-  std::cout<<"+++++++++++++++++++++FINISH++++++++++++++++"<<std::endl;
-  return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 }

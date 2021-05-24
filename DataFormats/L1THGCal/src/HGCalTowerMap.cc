@@ -30,12 +30,13 @@ const HGCalTowerMap& HGCalTowerMap::operator+=(const HGCalTowerMap& map) {
   return *this;
 }
 
-bool HGCalTowerMap::addEt(short bin_id, float etEm, float etHad) {
-  auto this_tower = towerMap_.find(bin_id);
-  if (this_tower == towerMap_.end())
-    return false;
-  this_tower->second.addEtEm(etEm);
-  this_tower->second.addEtHad(etHad);
-
+bool HGCalTowerMap::addEt(std::unordered_map<unsigned short, float> binIDandShares, float etEm, float etHad) {
+  for (auto binIDandShare: binIDandShares){
+    auto this_tower = towerMap_.find(binIDandShare.first);
+    if (this_tower == towerMap_.end())
+      return false;
+    this_tower->second.addEtEm(etEm*binIDandShare.second);
+    this_tower->second.addEtHad(etHad*binIDandShare.second);
+  }
   return true;
 }

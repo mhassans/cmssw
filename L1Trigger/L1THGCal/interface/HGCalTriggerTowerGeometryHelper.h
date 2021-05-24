@@ -36,8 +36,8 @@ public:
   const std::vector<l1t::HGCalTowerCoord>& getTowerCoordinates() const;
 
   unsigned short getTriggerTowerFromEtaPhi(const float& eta, const float& phi) const;
-  unsigned short getTriggerTower(const l1t::HGCalTriggerCell&) const;
-  unsigned short getTriggerTower(const l1t::HGCalTriggerSums&) const;
+  std::unordered_map<unsigned short, float> getTriggerTower(const l1t::HGCalTriggerCell&) const;
+  std::unordered_map<unsigned short, float> getTriggerTower(const l1t::HGCalTriggerSums&) const;
 
   const bool isNose() { return doNose_; }
 
