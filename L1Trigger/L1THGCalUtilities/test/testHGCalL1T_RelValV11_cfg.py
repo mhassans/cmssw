@@ -85,6 +85,9 @@ process = custom_full_trigger_sums(process)
 from L1Trigger.L1THGCal.customTriggerGeometry import custom_geometry_decentralized_V11
 process = custom_geometry_decentralized_V11(process, implementation=2)
 
+from L1Trigger.L1THGCal.customTowers import custom_towers_energySplit
+process = custom_towers_energySplit(process)
+
 process.hgcl1tpg_step = cms.Path(process.hgcalTriggerPrimitives)
 
 
