@@ -13,6 +13,8 @@
 HGCalTriggerTowerGeometryHelper::HGCalTriggerTowerGeometryHelper(const edm::ParameterSet& conf)
     : doNose_(conf.getParameter<bool>("doNose")),
       minEta_(conf.getParameter<double>("minEta")),
+      var1_(conf.getParameter<double>("var1")),
+      var2_(conf.getParameter<double>("var2")),
       maxEta_(conf.getParameter<double>("maxEta")),
       minPhi_(conf.getParameter<double>("minPhi")),
       maxPhi_(conf.getParameter<double>("maxPhi")),
@@ -191,7 +193,10 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
     towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
     binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDevisor } );
   }
- 
+
+  std::cout<<"var1="<<var1_<<std::endl;
+  std::cout<<"var2="<<var2_<<std::endl;
+
   return binIDandShares; //FIXME return choice with a boolean from the config
  // return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 

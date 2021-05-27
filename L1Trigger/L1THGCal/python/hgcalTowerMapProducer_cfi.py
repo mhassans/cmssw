@@ -3,6 +3,7 @@ import math
 
 L1TTriggerTowerConfig_etaphi = cms.PSet(readMappingFile=cms.bool(False),
                                         doNose=cms.bool(False),
+                                        var1=cms.double(1.1),
                                         minEta=cms.double(1.479),
                                         maxEta=cms.double(3.0),
                                         minPhi=cms.double(-1*math.pi),
@@ -11,6 +12,11 @@ L1TTriggerTowerConfig_etaphi = cms.PSet(readMappingFile=cms.bool(False),
                                         nBinsPhi=cms.int32(72),
                                         binsEta=cms.vdouble(),
                                         binsPhi=cms.vdouble())
+
+L1TTriggerTowerConfig_energySplit = L1TTriggerTowerConfig_etaphi.clone(
+    var1=cms.double(155.2213),
+    var2=cms.double(5435.221),
+)
 
 towerMap2D_parValues = cms.PSet( useLayerWeights = cms.bool(False),
                                  layerWeights = cms.vdouble(),

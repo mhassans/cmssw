@@ -47,6 +47,8 @@ private:
 
   bool doNose_;
   double minEta_;
+  double var1_;
+  double var2_;
   double maxEta_;
   double minPhi_;
   double maxPhi_;
