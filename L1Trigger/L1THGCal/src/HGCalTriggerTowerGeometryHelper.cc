@@ -192,7 +192,7 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
     binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDevisor } );
   }
  
-  return binIDandShares; //FIXME return choice with a boolean from the config
+  return binIDandShares; //FIXME add option (boolean) to the config to choose to return in the new and old ways
  // return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 
 }

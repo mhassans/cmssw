@@ -12,6 +12,17 @@ L1TTriggerTowerConfig_etaphi = cms.PSet(readMappingFile=cms.bool(False),
                                         binsEta=cms.vdouble(),
                                         binsPhi=cms.vdouble())
 
+L1TTriggerTowerConfig_energySplit = cms.PSet(readMappingFile=cms.bool(False),
+                                        doNose=cms.bool(False),
+                                        minEta=cms.double(1.305),
+                                        maxEta=cms.double(3.045),
+                                        minPhi=cms.double(-1*math.pi),
+                                        maxPhi=cms.double(math.pi),
+                                        nBinsEta=cms.int32(20),
+                                        nBinsPhi=cms.int32(72),
+                                        binsEta=cms.vdouble(),
+                                        binsPhi=cms.vdouble())
+
 towerMap2D_parValues = cms.PSet( useLayerWeights = cms.bool(False),
                                  layerWeights = cms.vdouble(),
                                   AlgoName = cms.string('HGCalTowerMapsWrapper'),
