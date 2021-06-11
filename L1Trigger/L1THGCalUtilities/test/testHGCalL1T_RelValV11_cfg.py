@@ -28,18 +28,9 @@ process.maxEvents = cms.untracked.PSet(
 )
 
 # Input source
-filePfx = '/store/mc/Phase2HLTTDRWinter20DIGI/SingleElectron_PT2to200/GEN-SIM-DIGI-RAW/PU200_110X_mcRun4_realistic_v3_ext2-v2/40000/'
+filePfx = '/store/mc/PhaseIITDRSpring19DR/VBF_HToInvisible_M125_14TeV_powheg_pythia8/GEN-SIM-DIGI-RAW/NoPU_106X_upgrade2023_realistic_v3-v2/130000'
 process.source = cms.Source("PoolSource",
-       fileNames = cms.untracked.vstring(filePfx + '/00582F93-5A2A-5847-8162-D81EE503500F.root',
-                                         filePfx + '/01C92E48-6B8E-6D4B-8B57-57540AFBC9D5.root',
-                                         filePfx + '/01F69B83-AC48-1242-9C6D-339335FABC1E.root', 
-                                         filePfx + '/022471A5-F18F-3D45-AAF0-88BAAA4B159C.root', 
-                                         filePfx + '/025E005F-AF77-9F45-AC99-4A78ADBAFF40.root', 
-                                         filePfx + '/0287BD18-6928-8844-9919-E2183E3C5BF4.root', 
-                                         filePfx + '/02C1307B-78C5-BC4F-B854-6988CD65D4C8.root', 
-                                         filePfx + '/03B69335-90DB-EA48-9D5C-F88786E854F0.root',
-                                         filePfx + '/0457C237-9151-ED46-8FD5-F1B152AA824F.root', 
-                                         filePfx + '/0457CFA7-3B54-324F-B61F-CA1F9384266B.root'),
+       fileNames = cms.untracked.vstring(filePfx + '/16786F16-EFA7-D140-84BB-C6DDD56B38DF.root'),
        inputCommands=cms.untracked.vstring(
            'keep *',
            'drop l1tEMTFHit2016Extras_simEmtfDigis_CSC_HLT',
@@ -69,7 +60,7 @@ process.configurationMetadata = cms.untracked.PSet(
 # Output definition
 process.TFileService = cms.Service(
     "TFileService",
-    fileName = cms.string("ntuple.root")
+    fileName = cms.string("ntuple_VBFHInv_NoPU.root")
     )
 
 # Other statements
