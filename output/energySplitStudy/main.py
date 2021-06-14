@@ -1,7 +1,8 @@
 from array import array
 import ROOT
 import math
-from funcs import getEtaPhiBins
+import numpy as np
+from funcs import getEtaPhiBins, sumTowers
 
 fInPath = '../ntuple_photons_NoPU.root'
 fIn = ROOT.TFile.Open(fInPath, "READ")
@@ -38,7 +39,8 @@ histHad = ROOT.TH2D("histHad","",nBinsEta,minEta,maxEta, nBinsPhi,minPhi,maxPhi)
 
 
 treeInVars = ['tower_iPhi', 'tower_iEta', 'tower_etEm', 'tower_etHad', 'tower_n', 'tower_eta', 'gen_eta', 'gen_phi', 'gen_energy']
-for entryNum in range(0, treeIn.GetEntries()):
+#for entryNum in range(0, treeIn.GetEntries()):
+for entryNum in range(0, 100):
     treeIn.GetEntry(entryNum)
     for var in treeInVars:
         exec("{0} = getattr(treeIn, '{0}')".format(var))
@@ -52,17 +54,32 @@ for entryNum in range(0, treeIn.GetEntries()):
 
     ZplusIndex = 0 if (int(np.sign(gen_eta[0]))==1) else 1
 
-    zPlus_GenEnergy = gen_energy[ZplusIndex]/np.cosh(gen_eta[ZplusIndex])
-    zPlus_GenEta = gen_eta[ZplusIndex]
-    zPlus_GenPhi = gen_phi[ZplusIndex]
-    zMinus_GenEnergy = gen_energy[1-ZplusIndex]/np.cosh(gen_eta[1-ZplusIndex])
-    zMinus_GenEta = gen_eta[1-ZplusIndex]
-    zMinus_GenPhi = gen_phi[1-ZplusIndex]
+    zPlus_GenEnergy[0] = gen_energy[ZplusIndex]/np.cosh(gen_eta[ZplusIndex])
+    zPlus_GenEta[0] = gen_eta[ZplusIndex]
+    zPlus_GenPhi[0] = gen_phi[ZplusIndex]
+    zMinus_GenEnergy[0] = gen_energy[1-ZplusIndex]/np.cosh(gen_eta[1-ZplusIndex])
+    zMinus_GenEta[0] = gen_eta[1-ZplusIndex]
+    zMinus_GenPhi[0] = gen_phi[1-ZplusIndex]
 
-floatVars = ['genEnergy', 'genEta', 'genPhi', 'IntegralEM', 'IntegralHad', 'EM1x1', 'Had1x1', 'EM3x3', 'Had3x3', 'EM5x5', 'Had5x5']
+    zPlus_IntegralEM[0] = histEM.Integral(int(nBinsEta/2), nBinsEta, 1, nBinsPhi)
+    zPlus_IntegralHad[0] = histHad.Integral(int(nBinsEta/2), nBinsEta, 1, nBinsPhi)
+    zMinus_IntegralEM[0] = histEM.Integral(1, int(nBinsEta/2), 1, nBinsPhi)
+    zMinus_IntegralHad[0] = histHad.Integral(1, int(nBinsEta/2), 1, nBinsPhi)
 
+    zPlus_EM1x1[0] = sumTowers(histEM, gen_eta[ZplusIndex], gen_phi[ZplusIndex], numNeighbors=0)
+    zPlus_EM3x3[0] = sumTowers(histEM, gen_eta[ZplusIndex], gen_phi[ZplusIndex], numNeighbors=1)
+    zPlus_EM5x5[0] = sumTowers(histEM, gen_eta[ZplusIndex], gen_phi[ZplusIndex], numNeighbors=2)
+    zPlus_Had1x1[0] = sumTowers(histHad, gen_eta[ZplusIndex], gen_phi[ZplusIndex], numNeighbors=0)
+    zPlus_Had3x3[0] = sumTowers(histHad, gen_eta[ZplusIndex], gen_phi[ZplusIndex], numNeighbors=1)
+    zPlus_Had5x5[0] = sumTowers(histHad, gen_eta[ZplusIndex], gen_phi[ZplusIndex], numNeighbors=2)
+    zMinus_EM1x1[0] = sumTowers(histEM, gen_eta[1-ZplusIndex], gen_phi[1-ZplusIndex], numNeighbors=0)
+    zMinus_EM3x3[0] = sumTowers(histEM, gen_eta[1-ZplusIndex], gen_phi[1-ZplusIndex], numNeighbors=1)
+    zMinus_EM5x5[0] = sumTowers(histEM, gen_eta[1-ZplusIndex], gen_phi[1-ZplusIndex], numNeighbors=2)
+    zMinus_Had1x1[0] = sumTowers(histHad, gen_eta[1-ZplusIndex], gen_phi[1-ZplusIndex], numNeighbors=0)
+    zMinus_Had3x3[0] = sumTowers(histHad, gen_eta[1-ZplusIndex], gen_phi[1-ZplusIndex], numNeighbors=1)
+    zMinus_Had5x5[0] = sumTowers(histHad, gen_eta[1-ZplusIndex], gen_phi[1-ZplusIndex], numNeighbors=2)
 
+    treeOut.Fill()
 
-treeOut.Fill()
 fOut.Write()
 fOut.Close()
