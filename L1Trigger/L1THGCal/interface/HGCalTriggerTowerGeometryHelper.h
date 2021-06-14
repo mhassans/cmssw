@@ -51,6 +51,8 @@ private:
   double maxPhi_;
   unsigned int nBinsEta_;
   unsigned int nBinsPhi_;
+  double var1_;
+  double var2_;
 
   std::vector<double> binsEta_;
   std::vector<double> binsPhi_;

@@ -18,6 +18,8 @@ HGCalTriggerTowerGeometryHelper::HGCalTriggerTowerGeometryHelper(const edm::Para
       maxPhi_(conf.getParameter<double>("maxPhi")),
       nBinsEta_(conf.getParameter<int>("nBinsEta")),
       nBinsPhi_(conf.getParameter<int>("nBinsPhi")),
+      var1_(conf.getParameter<double>("var1")),
+      //var2_(conf.getParameter<double>("var2")),
       binsEta_(conf.getParameter<std::vector<double> >("binsEta")),
       binsPhi_(conf.getParameter<std::vector<double> >("binsPhi")) {
   if (!binsEta_.empty() && ((unsigned int)(binsEta_.size()) != nBinsEta_ + 1)) {
@@ -133,5 +135,7 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCal
 }
 
 unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
+    std::cout<<"var1="<<var1_<<std::endl;
+    //std::cout<<"var2="<<var2_<<std::endl;
   return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
 }
