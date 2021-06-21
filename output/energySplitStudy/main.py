@@ -1,7 +1,10 @@
 from array import array
+import code
 import ROOT
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+import uproot
 from funcs import getEtaPhiBins, sumTowers
 
 def createTree():
@@ -9,7 +12,7 @@ def createTree():
     fIn = ROOT.TFile.Open(fInPath, "READ")
     treeIn = fIn.Get("hgcalTriggerNtuplizer/HGCalTriggerNtuple")
     
-    fOut = ROOT.TFile("output.root", "RECREATE")
+    fOut = ROOT.TFile("variables.root", "RECREATE")
     treeOut = ROOT.TTree("variables", "variables")
 
     zPlus_GenEnergy = array('f', [-100.])
@@ -78,7 +81,6 @@ def createTree():
     histEM = ROOT.TH2D("histEM","",nBinsEta,minEta,maxEta, nBinsPhi,minPhi,maxPhi)
     histHad = ROOT.TH2D("histHad","",nBinsEta,minEta,maxEta, nBinsPhi,minPhi,maxPhi)
     
-    treeInVars = ['tower_iPhi', 'tower_iEta', 'tower_etEm', 'tower_etHad', 'tower_n', 'tower_eta', 'gen_eta', 'gen_phi', 'gen_energy']
     for entryNum in range(0, treeIn.GetEntries()):
         treeIn.GetEntry(entryNum)
         tower_iPhi = getattr(treeIn,"tower_iPhi")
@@ -133,7 +135,6 @@ def createTree():
 
 def main():
     createTree()
-    #plotTree()
 
 if __name__=='__main__':
     main()
