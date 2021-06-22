@@ -56,6 +56,7 @@ private:
   std::vector<double> binsEta_;
   std::vector<double> binsPhi_;
 
+  bool splitModuleSum_;
   edm::FileInPath moduleTowerMapping_;
   int splitDivisorSilic_;
   int splitDivisorScint_;

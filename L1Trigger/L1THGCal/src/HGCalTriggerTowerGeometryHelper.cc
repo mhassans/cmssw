@@ -20,6 +20,7 @@ HGCalTriggerTowerGeometryHelper::HGCalTriggerTowerGeometryHelper(const edm::Para
       nBinsPhi_(conf.getParameter<int>("nBinsPhi")),
       binsEta_(conf.getParameter<std::vector<double> >("binsEta")),
       binsPhi_(conf.getParameter<std::vector<double> >("binsPhi")),
+      splitModuleSum_(conf.getParameter<bool>("splitModuleSum")),
       moduleTowerMapping_(conf.getParameter<edm::FileInPath>("moduleTowerMapping")),
       splitDivisorSilic_(conf.getParameter<int>("splitDivisorSilic")),
       splitDivisorScint_(conf.getParameter<int>("splitDivisorScint")){
@@ -132,27 +133,32 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
   // memory mapping explicitly only what is actually needed
   auto tower_id_itr = cells_to_trigger_towers_.find(trigger_cell_id);
   if (tower_id_itr != cells_to_trigger_towers_.end()){
-    binIDandShares.insert({tower_id_itr->second, 1});
+    binIDandShares.insert({tower_id_itr->second, 1.0});
     return binIDandShares;
   }
-  binIDandShares.insert({getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi()), 1});
+  binIDandShares.insert({getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi()), 1.0});
   return binIDandShares;
 }
 
 std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
-  HGCalModuleDetId detid(thesum.detId());
-  int moduleU = detid.moduleU();
-  int moduleV = detid.moduleV();
-  int layer = detid.layer();
-  int sector = detid.sector();
-  int zside = detid.zside();
+  std::unordered_map<unsigned short, float> binIDandShares = {}; 
+  if(!splitModuleSum_){
+    binIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
+    return binIDandShares;
+  } else{
+    HGCalModuleDetId detid(thesum.detId());
+    int moduleU = detid.moduleU();
+    int moduleV = detid.moduleV();
+    int layer = detid.layer();
+    int sector = detid.sector();
+    int zside = detid.zside();
 
-  int subdet = -1;
-  int splitDivisor = -1;
-  if(detid.isHScintillator()){ //FIXME HFNose not handled
-    subdet = 2;
-    layer += 28;
-    splitDivisor = splitDivisorScint_; 
+    int subdet = -1;
+    int splitDivisor = -1;
+    if(detid.isHScintillator()){ //FIXME HFNose not handled
+      subdet = 2;
+      layer += 28;
+      splitDivisor = splitDivisorScint_; 
     } else if(detid.isEE()){
       subdet = 0;
       splitDivisor = splitDivisorSilic_;
@@ -160,45 +166,38 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
       subdet = 1;
       layer += 28;
       splitDivisor = splitDivisorSilic_;
-  }
-  
-  std::ifstream moduleTowerMappingStream(moduleTowerMapping_.fullPath());
-  if (!moduleTowerMappingStream.is_open()) {
-    throw cms::Exception("MissingDataFile") << "Cannot open HGCalTowerMapProducer moduleTowerMapping file\n";
-  }
+    }
+    
+    std::ifstream moduleTowerMappingStream(moduleTowerMapping_.fullPath());
+    if (!moduleTowerMappingStream.is_open()) {
+      throw cms::Exception("MissingDataFile") << "Cannot open HGCalTowerMapProducer moduleTowerMapping file\n";
+    }
 
-  std::vector<std::string> result;
-  std::string line;
-  getline(moduleTowerMappingStream, line); //To skip first row
-  
-  for( std::string line; getline(moduleTowerMappingStream, line ); ){
+    std::vector<std::string> result;
+    std::string line;
+    getline(moduleTowerMappingStream, line); //To skip first row
+    for( std::string line; getline(moduleTowerMappingStream, line ); ){
       std::stringstream ss(line);
       while(ss.good()){
-          std::string substr;
-          std::getline(ss, substr, ' ');
-          result.push_back(substr);
-     }
-
-     if (std::stoi(result[0])==subdet && std::stoi(result[1])==layer && std::stoi(result[2])==moduleU && std::stoi(result[3])==moduleV){
+        std::string substr;
+        std::getline(ss, substr, ' ');
+        result.push_back(substr);
+      }
+      if (std::stoi(result[0])==subdet && std::stoi(result[1])==layer && std::stoi(result[2])==moduleU && std::stoi(result[3])==moduleV){
         break;
-     }
-     else{
+      } else{
         result.clear();
-     }
-  }
- 
-  std::unordered_map<unsigned short, float> binIDandShares = {};
+      }
+    }
 
-  int towerEta;
-  int towerPhi;
-  for (int i=1; i<=std::stoi(result[4]); i++){
-    towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
-    towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3) % int(nBinsPhi_); // move to the correct sector
-    towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
-    binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDivisor } );
+    int towerEta;
+    int towerPhi;
+    for (int i=1; i<=std::stoi(result[4]); i++){
+      towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
+      towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3) % int(nBinsPhi_); // move to the correct sector
+      towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
+      binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDivisor } );
+    }
+    return binIDandShares; 
   }
- 
-  return binIDandShares; //FIXME add option (boolean) to the config to choose to return in the new and old ways
- // return getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi());
-
 }

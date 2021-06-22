@@ -22,6 +22,7 @@ L1TTriggerTowerConfig_energySplit = cms.PSet(readMappingFile=cms.bool(False),
                                         nBinsPhi=cms.int32(72),
                                         binsEta=cms.vdouble(),
                                         binsPhi=cms.vdouble(),
+                                        splitModuleSum=cms.bool(True),
                                         moduleTowerMapping=cms.FileInPath("L1Trigger/L1THGCal/data/tower_per_module_silic8_scint16.txt"),
                                         splitDivisorSilic=cms.int32(8),
                                         splitDivisorScint=cms.int32(16))
