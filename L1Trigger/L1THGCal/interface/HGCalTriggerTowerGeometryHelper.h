@@ -56,6 +56,10 @@ private:
   std::vector<double> binsEta_;
   std::vector<double> binsPhi_;
 
+  edm::FileInPath moduleTowerMapping_;
+  int splitDivisorSilic_;
+  int splitDivisorScint_;
+
   HGCalTriggerTools triggerTools_;
 };
 

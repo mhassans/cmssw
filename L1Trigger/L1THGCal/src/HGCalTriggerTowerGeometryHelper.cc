@@ -19,7 +19,10 @@ HGCalTriggerTowerGeometryHelper::HGCalTriggerTowerGeometryHelper(const edm::Para
       nBinsEta_(conf.getParameter<int>("nBinsEta")),
       nBinsPhi_(conf.getParameter<int>("nBinsPhi")),
       binsEta_(conf.getParameter<std::vector<double> >("binsEta")),
-      binsPhi_(conf.getParameter<std::vector<double> >("binsPhi")) {
+      binsPhi_(conf.getParameter<std::vector<double> >("binsPhi")),
+      moduleTowerMapping_(conf.getParameter<edm::FileInPath>("moduleTowerMapping")),
+      splitDivisorSilic_(conf.getParameter<int>("splitDivisorSilic")),
+      splitDivisorScint_(conf.getParameter<int>("splitDivisorScint")){
   if (!binsEta_.empty() && ((unsigned int)(binsEta_.size()) != nBinsEta_ + 1)) {
     throw edm::Exception(edm::errors::Configuration, "Configuration")
         << "HGCalTriggerTowerGeometryHelper nBinsEta for the tower map not consistent with binsEta size" << std::endl;
@@ -145,26 +148,30 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
   int zside = detid.zside();
 
   int subdet = -1;
-  int splitDevisor = -1;
+  int splitDivisor = -1;
   if(detid.isHScintillator()){ //FIXME HFNose not handled
     subdet = 2;
     layer += 28;
-    splitDevisor = 16; //FIXME should be added from the config
+    splitDivisor = splitDivisorScint_; 
     } else if(detid.isEE()){
       subdet = 0;
-      splitDevisor = 8;
+      splitDivisor = splitDivisorSilic_;
     } else if(detid.isHSilicon()) {
       subdet = 1;
       layer += 28;
-      splitDevisor = 8;
+      splitDivisor = splitDivisorSilic_;
   }
-  std::ifstream input("../L1Trigger/L1THGCal/data/tower_per_module.txt");
+  
+  std::ifstream moduleTowerMappingStream(moduleTowerMapping_.fullPath());
+  if (!moduleTowerMappingStream.is_open()) {
+    throw cms::Exception("MissingDataFile") << "Cannot open HGCalTowerMapProducer moduleTowerMapping file\n";
+  }
 
   std::vector<std::string> result;
   std::string line;
-  getline(input, line); //To skip column names row
+  getline(moduleTowerMappingStream, line); //To skip first row
   
-  for( std::string line; getline( input, line ); ){
+  for( std::string line; getline(moduleTowerMappingStream, line ); ){
       std::stringstream ss(line);
       while(ss.good()){
           std::string substr;
@@ -184,12 +191,11 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
 
   int towerEta;
   int towerPhi;
-
   for (int i=1; i<=std::stoi(result[4]); i++){
     towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
     towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3) % int(nBinsPhi_); // move to the correct sector
     towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
-    binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDevisor } );
+    binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDivisor } );
   }
  
   return binIDandShares; //FIXME add option (boolean) to the config to choose to return in the new and old ways
