@@ -173,7 +173,7 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
       throw cms::Exception("MissingDataFile") << "Cannot open HGCalTowerMapProducer moduleTowerMapping file\n";
     }
 
-    std::vector<std::string> result;
+    std::vector<std::string> result; // the line including towers and module sum shares for this module
     std::string line;
     getline(moduleTowerMappingStream, line); //To skip first row
     for( std::string line; getline(moduleTowerMappingStream, line ); ){
@@ -189,13 +189,19 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
         result.clear();
       }
     }
+    //std::cout<<"start:"<<result[0]<<" , "<<result[1]<<" , "<<moduleU<<" , "<<moduleV<<std::endl;
+    //if(result.empty()){
+    //  throw cms::Exception("CorruptData")<<"Module l"<<layer<<"-u"<<moduleU<<"-v"<<moduleV<<" not found\n";
+    //}
 
     int towerEta;
     int towerPhi;
     for (int i=1; i<=std::stoi(result[4]); i++){
       towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
-      towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3) % int(nBinsPhi_); // move to the correct sector
-      towerPhi = (towerPhi + int(nBinsPhi_)) % int(nBinsPhi_); //correct for negative phi
+      towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3 + int(nBinsPhi_)/2) % int(nBinsPhi_);//move to the correct sector
+      if(zside==1){
+        towerPhi = (3*int(nBinsPhi_)/2 - towerPhi - 1) % int(nBinsPhi_); //correct x -> -x in z>0
+      }
       binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDivisor } );
     }
     return binIDandShares; 
