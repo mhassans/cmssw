@@ -183,26 +183,26 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
         std::getline(ss, substr, ' ');
         result.push_back(substr);
       }
-      if (std::stoi(result[0])==subdet && std::stoi(result[1])==layer && std::stoi(result[2])==moduleU && std::stoi(result[3])==moduleV){
+      if ((std::stoi(result.at(0))==subdet) && (std::stoi(result.at(1))==layer) && (std::stoi(result.at(2))==moduleU) && (std::stoi(result.at(3))==moduleV)){
         break;
       } else{
         result.clear();
       }
     }
-    //std::cout<<"start:"<<result[0]<<" , "<<result[1]<<" , "<<moduleU<<" , "<<moduleV<<std::endl;
-    //if(result.empty()){
-    //  throw cms::Exception("CorruptData")<<"Module l"<<layer<<"-u"<<moduleU<<"-v"<<moduleV<<" not found\n";
-    //}
+    if(result.empty()){ // for modules not found in the mapping file (currently a few partial modules) use the traditional method.
+      binIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
+      return binIDandShares;
+    }
 
     int towerEta;
     int towerPhi;
-    for (int i=1; i<=std::stoi(result[4]); i++){
-      towerEta = 2 + std::stoi(result[3*i+2]); // shift by two to avoid negative eta
-      towerPhi = (std::stoi(result[3*i+3]) + sector*int(nBinsPhi_)/3 + int(nBinsPhi_)/2) % int(nBinsPhi_);//move to the correct sector
+    for (int i=1; i<=std::stoi(result.at(4)); i++){
+      towerEta = 2 + std::stoi(result.at(3*i+2)); // shift by two to avoid negative eta
+      towerPhi = (std::stoi(result.at(3*i+3)) + sector*int(nBinsPhi_)/3 + int(nBinsPhi_)/2) % int(nBinsPhi_);//move to the correct sector
       if(zside==1){
         towerPhi = (3*int(nBinsPhi_)/2 - towerPhi - 1) % int(nBinsPhi_); //correct x -> -x in z>0
       }
-      binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result[3*i+4])/splitDivisor } );
+      binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result.at(3*i+4))/splitDivisor } );
     }
     return binIDandShares; 
   }
