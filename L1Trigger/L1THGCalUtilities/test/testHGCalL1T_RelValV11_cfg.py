@@ -24,13 +24,12 @@ process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10)
+    input = cms.untracked.int32(50)
 )
 
 # Input source
-filePfx = '/store/mc/PhaseIITDRSpring19DR/VBF_HToInvisible_M125_14TeV_powheg_pythia8/GEN-SIM-DIGI-RAW/NoPU_106X_upgrade2023_realistic_v3-v2/130000'
 process.source = cms.Source("PoolSource",
-       fileNames = cms.untracked.vstring(filePfx + '/16786F16-EFA7-D140-84BB-C6DDD56B38DF.root'),
+       fileNames = cms.untracked.vstring(filePfx + '/store/mc/Phase2HLTTDRWinter20DIGI/SingleElectron_PT2to200/GEN-SIM-DIGI-RAW/PU200_110X_mcRun4_realistic_v3_ext2-v2/40000/00582F93-5A2A-5847-8162-D81EE503500F.root'),
        inputCommands=cms.untracked.vstring(
            'keep *',
            'drop l1tEMTFHit2016Extras_simEmtfDigis_CSC_HLT',
@@ -60,7 +59,7 @@ process.configurationMetadata = cms.untracked.PSet(
 # Output definition
 process.TFileService = cms.Service(
     "TFileService",
-    fileName = cms.string("ntuple_VBFHInv_NoPU.root")
+    fileName = cms.string("ntuple.root")
     )
 
 # Other statements
@@ -69,15 +68,6 @@ process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T15', ''
 
 # load HGCAL TPG simulation
 process.load('L1Trigger.L1THGCal.hgcalTriggerPrimitives_cff')
-
-from L1Trigger.L1THGCal.customTriggerSums import custom_full_trigger_sums
-process = custom_full_trigger_sums(process)
-
-from L1Trigger.L1THGCal.customTriggerGeometry import custom_geometry_decentralized_V11
-process = custom_geometry_decentralized_V11(process, implementation=2)
-
-from L1Trigger.L1THGCal.customTowers import custom_towers_energySplit
-process = custom_towers_energySplit(process)
 
 process.hgcl1tpg_step = cms.Path(process.hgcalTriggerPrimitives)
 
