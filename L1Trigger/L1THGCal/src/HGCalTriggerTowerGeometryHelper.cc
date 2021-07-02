@@ -208,14 +208,14 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
     for (int i=1; i<=numTowers; i++){
       towerEtaRaw = std::stoi(result.at(3*i+2));
       towerPhiRaw = std::stoi(result.at(3*i+3));
-      towerShare = std::stod(result.at(3*i+4))
+      towerShare = std::stod(result.at(3*i+4));
       
       towerEta = 2 + towerEtaRaw; // shift by two to avoid negative eta
 
       towerPhi = (towerPhiRaw + sector*rotate120Deg + rotate180Deg) % int(nBinsPhi_);//move to the correct sector
       if(zside==1){
         towerPhi = reflectXaxis - towerPhi; //correct x -> -x in z>0
-        towerPhi = (int(nBinsPhi_) + towerPhi) % int(nBinsPhi_) // make all phi between 0 to nBinsPhi_-1
+        towerPhi = (int(nBinsPhi_) + towerPhi) % int(nBinsPhi_); // make all phi between 0 to nBinsPhi_-1
       }
 
       towerIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  towerShare/splitDivisor } );
