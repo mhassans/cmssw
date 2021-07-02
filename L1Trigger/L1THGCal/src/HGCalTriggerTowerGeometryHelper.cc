@@ -194,16 +194,33 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
       return binIDandShares;
     }
 
-    int towerEta;
-    int towerPhi;
-    for (int i=1; i<=std::stoi(result.at(4)); i++){
-      towerEta = 2 + std::stoi(result.at(3*i+2)); // shift by two to avoid negative eta
-      towerPhi = (std::stoi(result.at(3*i+3)) + sector*int(nBinsPhi_)/3 + int(nBinsPhi_)/2) % int(nBinsPhi_);//move to the correct sector
+    int towerEta = -999;
+    int towerEtaRaw = -999;
+    int towerPhi = -999;
+    int towerPhiRaw = -999;    
+    int numTowers = std::stoi(result.at(4));
+    double towerShare = -999.9;
+
+    int rotate180Deg = int(nBinsPhi_)/2; 
+    int rotate120Deg = int(nBinsPhi_)/3;
+    int reflectXaxis = int(nBinsPhi_)/2 - 1; //to find phi bin after x -> -x (up to modulo)
+
+    for (int i=1; i<=numTowers; i++){
+      towerEtaRaw = std::stoi(result.at(3*i+2));
+      towerPhiRaw = std::stoi(result.at(3*i+3));
+      towerShare = std::stod(result.at(3*i+4))
+      
+      towerEta = 2 + towerEtaRaw; // shift by two to avoid negative eta
+
+      towerPhi = (towerPhiRaw + sector*rotate120Deg + rotate180Deg) % int(nBinsPhi_);//move to the correct sector
       if(zside==1){
-        towerPhi = (3*int(nBinsPhi_)/2 - towerPhi - 1) % int(nBinsPhi_); //correct x -> -x in z>0
+        towerPhi = reflectXaxis - towerPhi; //correct x -> -x in z>0
+        towerPhi = (int(nBinsPhi_) + towerPhi) % int(nBinsPhi_) // make all phi between 0 to nBinsPhi_-1
       }
-      binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  std::stod(result.at(3*i+4))/splitDivisor } );
+
+      binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  towerShare/splitDivisor } );
     }
+
     return binIDandShares; 
   }
 }
