@@ -126,25 +126,25 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTowerFromEtaPhi(const 
 }
 
 std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerCell& thecell) const {
-  std::unordered_map<unsigned short, float> binIDandShares = {}; 
+  std::unordered_map<unsigned short, float> towerIDandShares = {}; 
   unsigned int trigger_cell_id = thecell.detId();
   // NOTE: if the TC is not found in the map than it is mapped via eta-phi coords.
   // this can be considered dangerous (silent failure of the map) but it actually allows to save
   // memory mapping explicitly only what is actually needed
   auto tower_id_itr = cells_to_trigger_towers_.find(trigger_cell_id);
   if (tower_id_itr != cells_to_trigger_towers_.end()){
-    binIDandShares.insert({tower_id_itr->second, 1.0});
-    return binIDandShares;
+    towerIDandShares.insert({tower_id_itr->second, 1.0});
+    return towerIDandShares;
   }
-  binIDandShares.insert({getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi()), 1.0});
-  return binIDandShares;
+  towerIDandShares.insert({getTriggerTowerFromEtaPhi(thecell.position().eta(), thecell.position().phi()), 1.0});
+  return towerIDandShares;
 }
 
 std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTriggerTower(const l1t::HGCalTriggerSums& thesum) const {
-  std::unordered_map<unsigned short, float> binIDandShares = {}; 
+  std::unordered_map<unsigned short, float> towerIDandShares = {}; 
   if(!splitModuleSum_){
-    binIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
-    return binIDandShares;
+    towerIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
+    return towerIDandShares;
   } else{
     HGCalModuleDetId detid(thesum.detId());
     int moduleU = detid.moduleU();
@@ -190,8 +190,8 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
       }
     }
     if(result.empty()){ // for modules not found in the mapping file (currently a few partial modules) use the traditional method.
-      binIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
-      return binIDandShares;
+      towerIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
+      return towerIDandShares;
     }
 
     int towerEta = -999;
@@ -218,9 +218,9 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
         towerPhi = (int(nBinsPhi_) + towerPhi) % int(nBinsPhi_) // make all phi between 0 to nBinsPhi_-1
       }
 
-      binIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  towerShare/splitDivisor } );
+      towerIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  towerShare/splitDivisor } );
     }
 
-    return binIDandShares; 
+    return towerIDandShares; 
   }
 }
