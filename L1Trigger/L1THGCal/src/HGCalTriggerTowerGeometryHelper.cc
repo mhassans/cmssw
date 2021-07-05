@@ -149,7 +149,6 @@ unsigned short HGCalTriggerTowerGeometryHelper::getTriggerTowerFromEtaPhi(const 
     bin_phi = bin_phi_l - binsPhi_.begin() - 1;
   }
   int zside = eta < 0 ? -1 : 1;
-
   return l1t::HGCalTowerID(doNose_, zside, bin_eta, bin_phi).rawId();
 }
 
@@ -209,18 +208,18 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
       std::getline(ss, substr, ' ');
       towerIDandShares_raw.push_back(substr);
       }
-
+      //eta variables
       int towerEta = -999;
       int towerEta_raw = -999;
       int offsetEta = 2;
-      
+      //phi variables
       int towerPhi = -999;
       int towerPhi_raw = -999;    
       int rotate180Deg = int(nBinsPhi_)/2; 
       int rotate120Deg = int(nBinsPhi_)/3;
       int reflectXaxis = int(nBinsPhi_)/2 - 1; //to find phi bin after x -> -x (up to modulo)
       
-      double towerShare = -999.9;
+      double towerShare = -999.9; //the share each tower gets from module sum
      
       int numTowers = std::stoi(towerIDandShares_raw.at(0));
       
