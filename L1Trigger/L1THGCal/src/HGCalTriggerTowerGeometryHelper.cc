@@ -83,6 +83,34 @@ HGCalTriggerTowerGeometryHelper::HGCalTriggerTowerGeometryHelper(const edm::Para
     }
     l1tTriggerTowerMappingStream.close();
   }
+
+  if (splitModuleSum_){
+    std::ifstream moduleTowerMappingStream(moduleTowerMapping_.fullPath());
+    if (!moduleTowerMappingStream.is_open()) {
+      throw cms::Exception("MissingDataFile") << "Cannot open HGCalTowerMapProducer moduleTowerMapping file\n";
+    }
+
+    std::string line;
+    getline(moduleTowerMappingStream, line); //To skip first row (header) of the file
+    for( std::string line; getline(moduleTowerMappingStream, line ); ){
+      size_t pos = 0;
+      int counter = 0;
+      int moduleTowerDeilimiter = 4; //first four numbers in each line determine module ID. The rest for towers.
+      while( counter != moduleTowerDeilimiter )
+        {
+        pos+=1;
+        pos = line.find(' ', pos);
+        if ( pos == std::string::npos ){
+          throw cms::Exception("CorruptData")<<"Found incorrect values in HGCalTowerMapProducer moduleTowerMapping file\n"
+                                             <<"values are: "<<line<<"\n";
+        }           
+        counter++;
+        }
+      modules_to_trigger_towers_[line.substr(0, pos)] = line.substr(pos+1,line.length());
+    } 
+    moduleTowerMappingStream.close();
+  }
+
 }
 
 const std::vector<l1t::HGCalTowerCoord>& HGCalTriggerTowerGeometryHelper::getTowerCoordinates() const {
@@ -168,59 +196,55 @@ std::unordered_map<unsigned short, float> HGCalTriggerTowerGeometryHelper::getTr
       splitDivisor = splitDivisorSilic_;
     }
     
-    std::ifstream moduleTowerMappingStream(moduleTowerMapping_.fullPath());
-    if (!moduleTowerMappingStream.is_open()) {
-      throw cms::Exception("MissingDataFile") << "Cannot open HGCalTowerMapProducer moduleTowerMapping file\n";
-    }
-
-    std::vector<std::string> result; // the line including towers and module sum shares for this module
-    std::string line;
-    getline(moduleTowerMappingStream, line); //To skip first row
-    for( std::string line; getline(moduleTowerMappingStream, line ); ){
-      std::stringstream ss(line);
+    auto module_id_itr = modules_to_trigger_towers_.find(std::to_string(subdet) + " " + 
+                                                         std::to_string(layer) + " " + 
+                                                         std::to_string(moduleU) + " " + 
+                                                         std::to_string(moduleV)
+                                                         );
+    if (module_id_itr != modules_to_trigger_towers_.end()){
+      std::vector<std::string> towerIDandShares_raw; 
+      std::stringstream ss(module_id_itr->second);
       while(ss.good()){
-        std::string substr;
-        std::getline(ss, substr, ' ');
-        result.push_back(substr);
+      std::string substr;
+      std::getline(ss, substr, ' ');
+      towerIDandShares_raw.push_back(substr);
       }
-      if ((std::stoi(result.at(0))==subdet) && (std::stoi(result.at(1))==layer) && (std::stoi(result.at(2))==moduleU) && (std::stoi(result.at(3))==moduleV)){
-        break;
-      } else{
-        result.clear();
+
+      int towerEta = -999;
+      int towerEta_raw = -999;
+      int offsetEta = 2;
+      
+      int towerPhi = -999;
+      int towerPhi_raw = -999;    
+      int rotate180Deg = int(nBinsPhi_)/2; 
+      int rotate120Deg = int(nBinsPhi_)/3;
+      int reflectXaxis = int(nBinsPhi_)/2 - 1; //to find phi bin after x -> -x (up to modulo)
+      
+      double towerShare = -999.9;
+     
+      int numTowers = std::stoi(towerIDandShares_raw.at(0));
+      
+      for (int i=0; i<numTowers; i++){
+        towerEta_raw = std::stoi(towerIDandShares_raw.at(3*i+1));
+        towerPhi_raw = std::stoi(towerIDandShares_raw.at(3*i+2));
+        towerShare = std::stod(towerIDandShares_raw.at(3*i+3));
+        
+        towerEta = offsetEta + towerEta_raw; 
+
+        towerPhi = (towerPhi_raw + sector*rotate120Deg + rotate180Deg) % int(nBinsPhi_);//move to the correct sector
+        if(zside==1){
+          towerPhi = reflectXaxis - towerPhi; //correct x -> -x in z>0
+          towerPhi = (int(nBinsPhi_) + towerPhi) % int(nBinsPhi_); // make all phi between 0 to nBinsPhi_-1
+        }
+
+        towerIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  towerShare/splitDivisor } );
       }
-    }
-    if(result.empty()){ // for modules not found in the mapping file (currently a few partial modules) use the traditional method.
+
+      return towerIDandShares; 
+    
+    } else{// for modules not found in the mapping file (currently a few partial modules) use the traditional method.
       towerIDandShares.insert({getTriggerTowerFromEtaPhi(thesum.position().eta(), thesum.position().phi()), 1.0});
       return towerIDandShares;
     }
-
-    int towerEta = -999;
-    int towerEtaRaw = -999;
-    int towerPhi = -999;
-    int towerPhiRaw = -999;    
-    int numTowers = std::stoi(result.at(4));
-    double towerShare = -999.9;
-
-    int rotate180Deg = int(nBinsPhi_)/2; 
-    int rotate120Deg = int(nBinsPhi_)/3;
-    int reflectXaxis = int(nBinsPhi_)/2 - 1; //to find phi bin after x -> -x (up to modulo)
-
-    for (int i=1; i<=numTowers; i++){
-      towerEtaRaw = std::stoi(result.at(3*i+2));
-      towerPhiRaw = std::stoi(result.at(3*i+3));
-      towerShare = std::stod(result.at(3*i+4));
-      
-      towerEta = 2 + towerEtaRaw; // shift by two to avoid negative eta
-
-      towerPhi = (towerPhiRaw + sector*rotate120Deg + rotate180Deg) % int(nBinsPhi_);//move to the correct sector
-      if(zside==1){
-        towerPhi = reflectXaxis - towerPhi; //correct x -> -x in z>0
-        towerPhi = (int(nBinsPhi_) + towerPhi) % int(nBinsPhi_); // make all phi between 0 to nBinsPhi_-1
-      }
-
-      towerIDandShares.insert( {l1t::HGCalTowerID(doNose_, zside, towerEta, towerPhi).rawId(),  towerShare/splitDivisor } );
-    }
-
-    return towerIDandShares; 
   }
 }

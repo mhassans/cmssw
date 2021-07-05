@@ -44,6 +44,7 @@ public:
 private:
   std::vector<l1t::HGCalTowerCoord> tower_coords_;
   std::unordered_map<unsigned, short> cells_to_trigger_towers_;
+  std::unordered_map<std::string, std::string> modules_to_trigger_towers_;
 
   bool doNose_;
   double minEta_;
